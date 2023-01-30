@@ -65,33 +65,38 @@ print("pi/2, -pi/2", fx(math.pi/2,-math.pi/2), fy(math.pi/2,-math.pi/2))
 
 print("\n\nTESTING IK\n\n")
 
+def get_oc(ot):
+  return math.asin(-x/l - math.sin(ot)) - ot
+
 def ik(x,y):
-  inner_term = math.sqrt(x*x + y*y)/(2*l)
-  print("Inner term:", inner_term)
-  alpha = math.acos(inner_term)
+  alpha = math.acos(math.sqrt(x*x + y*y)/(2*l))
   gamma = math.atan(x/y)
   print("gamma, alpha", gamma, alpha)
-  ot = gamma + alpha
-  print("theta_t:", ot)
-  oc = math.asin(-x/l - math.sin(ot)) - ot
-  print("theta_c", oc)
+  ot_left = gamma + alpha
+  oc_left = get_oc(ot_left)
 
-  ot_other = gamma - alpha
-  print("Theta_t other", ot_other)
-  oc_other = math.asin(-x/l - math.sin(ot_other)) - ot_other
-  print("Theta_c other", oc_other)
-  return ot, oc
+  ot_right = gamma - alpha
+  oc_right = get_oc(ot_right)
+  return (ot_left, oc_left), (ot_right, oc_right)
 
 
-# This SHOULD give 0, 0. but it does not :(
-ot, oc = ik(0, -2*l)
+left, right = ik(0, -2*l)
 
-print(fx(ot,oc), fy(ot,oc))
+print("Left:", left)
+print("Right:", right)
+print("Should give 0, -2l")
+print(fx(*left), fy(*left))
+print(fx(*right), fy(*right))
 
 
 
-print("TRYING NON DEGENERATE")
+print("\nTRYING NON DEGENERATE")
 
-ot, oc = ik(-l, -l)
+left, right = ik(-l, -l)
 
-print(fx(ot,oc), fy(ot,oc))
+
+print("Left:", left)
+print("Right:", right)
+print("Should give -l, -l")
+print(fx(*left), fy(*left))
+print(fx(*right), fy(*right))
