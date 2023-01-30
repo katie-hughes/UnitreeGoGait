@@ -65,7 +65,7 @@ print("pi/2, -pi/2", fx(math.pi/2,-math.pi/2), fy(math.pi/2,-math.pi/2))
 
 print("\n\nTESTING IK\n\n")
 
-def get_oc(ot):
+def get_oc(ot, x):
   return math.asin(-x/l - math.sin(ot)) - ot
 
 def ik(x,y):
@@ -73,10 +73,10 @@ def ik(x,y):
   gamma = math.atan(x/y)
   print("gamma, alpha", gamma, alpha)
   ot_left = gamma + alpha
-  oc_left = get_oc(ot_left)
+  oc_left = get_oc(ot_left, x)
 
   ot_right = gamma - alpha
-  oc_right = get_oc(ot_right)
+  oc_right = get_oc(ot_right, x)
   return (ot_left, oc_left), (ot_right, oc_right)
 
 
@@ -84,7 +84,7 @@ left, right = ik(0, -2*l)
 
 print("Left:", left)
 print("Right:", right)
-print("Should give 0, -2l")
+print("Should give 0, -2l =", -2*l)
 print(fx(*left), fy(*left))
 print(fx(*right), fy(*right))
 
@@ -94,9 +94,18 @@ print("\nTRYING NON DEGENERATE")
 
 left, right = ik(-l, -l)
 
+print("Left:", left)
+print("Right:", right)
+print("Should give -l, -l = ", -l, -l)
+print(fx(*left), fy(*left))
+print(fx(*right), fy(*right))
+
+print("\nTRYING ANOTHER NON DEGENERATE")
+
+left, right = ik(l, -l)
 
 print("Left:", left)
 print("Right:", right)
-print("Should give -l, -l")
+print("Should give l, -l = ", l, -l)
 print(fx(*left), fy(*left))
 print(fx(*right), fy(*right))
