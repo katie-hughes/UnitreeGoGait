@@ -4,50 +4,17 @@ import math
 
 M_PI = np.pi
 
-motiontime = np.linspace(0,10000,10000)
-
-calf_1 = -M_PI / 2 + 0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
-calf_2 = -M_PI / 2 - 0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
 calf_lo = -2.82
 calf_hi = -0.89
 
-thigh_1 =  0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
-thigh_2 = -0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
 thigh_lo = -0.69
 thigh_hi =  4.50
 
-hip_1 =  0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
-hip_2 = -0.5 * np.sin(2 * M_PI / 5.0 * motiontime * 1e-3)
 hip_lo = -0.86
 hip_hi =  0.86
 
-plt.plot(motiontime, calf_1, color='r', label='Calf 1')
-plt.plot(motiontime, calf_2, color='r', label='Calf 2')
-plt.axhline(calf_lo, color='r')
-plt.axhline(calf_hi, color='r', label='Calf joint limits')
-
-plt.plot(motiontime, thigh_1, color='b', label='thigh 1')
-plt.plot(motiontime, thigh_2, color='b', label='thigh 2')
-plt.axhline(thigh_lo, color='b')
-plt.axhline(thigh_hi, color='b', label='Joint limits')
-plt.ylim(-1.5*M_PI, 1.5*M_PI)
-
-plt.legend()
-plt.title("Joint trajectories: 10s")
-plt.ylabel("Joint angle (radians)")
-plt.xlabel("Ticks")
-
-
-plt.savefig('thigh_calf.png')
-plt.close()
-
-
 print("TESTING FK\n\n")
-# desired foot position
 l = 0.213
-x = 0
-y = -2*l
-
 
 def fx(theta_t, theta_c):
   return -l*math.sin(theta_t) - l*math.sin(theta_t+theta_c)
@@ -109,3 +76,62 @@ print("Right:", right)
 print("Should give l, -l = ", l, -l)
 print(fx(*left), fy(*left))
 print(fx(*right), fy(*right))
+
+
+def in_workspace(x, y):
+  return (x*x + y*y)<2*l
+
+
+numpoints = 1000
+
+desired_x = np.linspace(-l, l, numpoints)
+desired_y = np.linspace(-l, -l, numpoints)
+
+# plt.plot(desired_x, desired_y)
+# plt.xlabel("Desired x")
+# plt.ylabel("Desired Y")
+# plt.show()
+
+ot_left = []
+ot_right = []
+oc_left = []
+oc_right = []
+
+for i in range(0,numpoints):
+  x = desired_x[i]
+  y = desired_y[i]
+  if in_workspace(x, y):
+    left, right = ik(x, y)
+    ot_left.append(left[0])
+    oc_left.append(left[1])
+    ot_right.append(right[0])
+    oc_right.append(right[1])
+  else:
+    print("Too far out!!")
+    break
+
+plt.plot(ot_left, label='Thigh Joint', color='b')
+plt.plot(oc_left, label='Calf Joint', color='r')
+plt.axhline(thigh_lo, color='b')
+plt.axhline(thigh_hi, color='b')
+plt.axhline(calf_lo, color='r')
+plt.axhline(calf_hi, color='r')
+plt.title("Left")
+plt.xlabel("Timestep")
+plt.ylabel("angle (radians)")
+plt.legend()
+plt.savefig("left.png")
+plt.show()
+
+plt.plot(ot_right, label='Thigh Joint', color='b')
+plt.plot(oc_right, label='Calf Joint', color='r')
+plt.axhline(thigh_lo, color='b')
+plt.axhline(thigh_hi, color='b')
+plt.axhline(calf_lo, color='r')
+plt.axhline(calf_hi, color='r')
+plt.title("Right")
+plt.xlabel("Timestep")
+plt.ylabel("angle (radians)")
+plt.legend()
+plt.savefig("right.png")
+plt.show()
