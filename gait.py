@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import patches
 import math
 
 M_PI = np.pi
@@ -82,15 +83,26 @@ def in_workspace(x, y):
   return (x*x + y*y)<2*l
 
 
-numpoints = 1000
+numpoints = 5000
 
 desired_x = np.linspace(-l, l, numpoints)
 desired_y = np.linspace(-l, -l, numpoints)
 
-# plt.plot(desired_x, desired_y)
-# plt.xlabel("Desired x")
-# plt.ylabel("Desired Y")
-# plt.show()
+fig = plt.figure()
+ax = fig.add_subplot()
+ws_circle = patches.Circle((0,0), radius=0.5, facecolor=(0, 1, 0, 0.5), label='Workspace\n(Ignoring Joint limits)')
+ax.add_patch(ws_circle)
+ax.scatter([0],[0], color='r', label='Hip origin')
+# ax.plot(desired_x, desired_y, color='k', label='Trajectory')
+ax.arrow(-l, -l, 2*l, 0, head_width=0.03, color='k', label='Foot Trajectory')
+ax.axis('equal')
+ax.set_title("Simple Desired Trajectory")
+ax.set_ylabel("Desired Y")
+ax.set_xlabel("Desired X")
+ax.legend()
+plt.savefig("plots/simple_traj.png")
+plt.show()
+
 
 ot_left = []
 ot_right = []
@@ -110,28 +122,28 @@ for i in range(0,numpoints):
     print("Too far out!!")
     break
 
-plt.plot(ot_left, label='Thigh Joint', color='b')
-plt.plot(oc_left, label='Calf Joint', color='r')
-plt.axhline(thigh_lo, color='b')
-plt.axhline(thigh_hi, color='b')
-plt.axhline(calf_lo, color='r')
-plt.axhline(calf_hi, color='r')
-plt.title("Left")
-plt.xlabel("Timestep")
-plt.ylabel("angle (radians)")
-plt.legend()
-plt.savefig("left.png")
-plt.show()
+# plt.plot(ot_left, label='Thigh Joint', color='b')
+# plt.plot(oc_left, label='Calf Joint', color='r')
+# plt.axhline(thigh_lo, color='b', linestyle='dashed')
+# plt.axhline(thigh_hi, color='b', linestyle='dashed')
+# plt.axhline(calf_lo, color='r', linestyle='dashed')
+# plt.axhline(calf_hi, color='r', linestyle='dashed')
+# plt.title("Lefty IK solution")
+# plt.xlabel("Timestep")
+# plt.ylabel("angle (radians)")
+# plt.legend()
+# plt.savefig("plots/left.png")
+# plt.show()
 
-plt.plot(ot_right, label='Thigh Joint', color='b')
-plt.plot(oc_right, label='Calf Joint', color='r')
-plt.axhline(thigh_lo, color='b')
-plt.axhline(thigh_hi, color='b')
-plt.axhline(calf_lo, color='r')
-plt.axhline(calf_hi, color='r')
-plt.title("Right")
-plt.xlabel("Timestep")
-plt.ylabel("angle (radians)")
-plt.legend()
-plt.savefig("right.png")
-plt.show()
+# plt.plot(ot_right, label='Thigh Joint', color='b')
+# plt.plot(oc_right, label='Calf Joint', color='r')
+# plt.axhline(thigh_lo, color='b', linestyle='dashed')
+# plt.axhline(thigh_hi, color='b', linestyle='dashed')
+# plt.axhline(calf_lo, color='r', linestyle='dashed')
+# plt.axhline(calf_hi, color='r', linestyle='dashed')
+# plt.title("Righty IK solution")
+# plt.xlabel("Timestep")
+# plt.ylabel("angle (radians)")
+# plt.legend()
+# plt.savefig("plots/right.png")
+# plt.show()
