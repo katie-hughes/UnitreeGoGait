@@ -90,7 +90,7 @@ desired_y = np.linspace(-l, -l, numpoints)
 
 fig = plt.figure()
 ax = fig.add_subplot()
-ws_circle = patches.Circle((0,0), radius=0.5, facecolor=(0, 1, 0, 0.5), label='Workspace\n(Ignoring Joint limits)')
+ws_circle = patches.Circle((0,0), radius=2*l, facecolor=(0, 1, 0, 0.5), label='Workspace\n(Ignoring Joint limits)')
 ax.add_patch(ws_circle)
 ax.scatter([0],[0], color='r', label='Hip origin')
 # ax.plot(desired_x, desired_y, color='k', label='Trajectory')
