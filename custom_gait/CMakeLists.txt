@@ -18,7 +18,10 @@ ament_target_dependencies(custom_gait
   rclcpp
   ros2_unitree_legged_msgs)
 
-target_link_libraries(custom_gait "${cpp_typesupport_target}")
+# target_link_libraries(custom_gait "${cpp_typesupport_target}")
+install(TARGETS
+  custom_gait
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

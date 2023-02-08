@@ -5,8 +5,6 @@
 #include <cmath>
 
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_unitree_legged_msgs/msg/high_cmd.hpp"
-#include "ros2_unitree_legged_msgs/msg/high_state.hpp"
 #include "ros2_unitree_legged_msgs/msg/low_cmd.hpp"
 #include "ros2_unitree_legged_msgs/msg/low_state.hpp"
 
@@ -239,11 +237,11 @@ class CustomGait : public rclcpp::Node
       return (- 0.5 * sin(2 * M_PI / 5.0 * t * 1e-3));
     }
 
-    double hip_func1(long t){
+    double hip_func1(long){
       return 0.0;
     }
 
-    double hip_func2(long t){
+    double hip_func2(long){
       return 0.0;
     }
 
