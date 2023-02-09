@@ -1,0 +1,9 @@
+repositories:
+  unitree_ros2:
+    type: git
+    url: git@github.com:katie-hughes/unitree_ros2.git
+    version: low_level
+  wiproj:
+    type: git
+    url: git@github.com:katie-hughes/UnitreeGoGait.git
+    version: main
