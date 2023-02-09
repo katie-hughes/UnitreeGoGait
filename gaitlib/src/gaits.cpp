@@ -31,4 +31,19 @@ std::vector<double> bezier(std::vector<double> points, double step){
   return curve;
 }
 
+std::vector<double> modulate(std::vector<double> ref, double scale){
+  size_t len = ref.size();
+  // unsure about this typecasting
+  size_t break_at = len * scale;
+  // source: 
+  // https://stackoverflow.com/questions/9811235/best-way-to-split-a-vector-into-two-smaller-arrays
+  std::vector<double> split1(ref.begin(), ref.begin() + break_at);
+  std::vector<double> split2(ref.begin() + break_at, ref.end());
+  // now put these back together in the opposite ordering. source:
+  // https://stackoverflow.com/questions/201718/concatenating-two-stdvectors
+  // vector1.insert( vector1.end(), vector2.begin(), vector2.end() );
+  split2.insert( split2.end(), split1.begin(), split1.end() );
+  return split2;
+}
+
 }

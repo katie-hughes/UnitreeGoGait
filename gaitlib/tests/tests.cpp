@@ -45,4 +45,17 @@ namespace gaitlib
         REQUIRE(choose(5,5) == 1);
     }
 
+    TEST_CASE("Simple Modulate", "[gaits]")
+    {
+        std::vector<double> init = {1.0, 2.0, 3.0, 4.0};
+        std::vector<double> mod_25 = {2.0, 3.0, 4.0, 1.0};
+        std::vector<double> mod_50 = {3.0, 4.0, 1.0, 2.0};
+        std::vector<double> mod_75 = {4.0, 1.0, 2.0, 3.0};
+        REQUIRE(modulate(init, 0.25) == mod_25);
+        REQUIRE(modulate(init, 0.50) == mod_50);
+        REQUIRE(modulate(init, 0.75) == mod_75);
+        REQUIRE(modulate(init, 0.00) == init);
+        REQUIRE(modulate(init, 1.00) == init);
+    }
+
 }

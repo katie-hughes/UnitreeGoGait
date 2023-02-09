@@ -63,6 +63,12 @@ namespace gaitlib{
   /// @return bezier curve following the control points
   std::vector<double> bezier(std::vector<double> points, double step);
 
+  /// @brief Modulte a vector
+  /// @param ref reference input vector
+  /// @param scale scale to modulate by: between 0 and 1
+  /// @return new modulated vector
+  std::vector<double> modulate(std::vector<double> ref, double scale);
+
 }
 
 #endif
