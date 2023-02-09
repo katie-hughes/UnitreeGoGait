@@ -201,19 +201,7 @@ private:
     return 0.0;
   }
 
-  // Designed to act like the numpy linspace function.
-  // Used for forming/ testing simple linear trajectories
-  std::vector<double> linspace(double lo, double hi, double points)
-  {
-    std::vector<double> res;
-    double step = (hi - lo) / period;
-    double curr = lo;
-    for (int i = 0; i < points; i++) {
-      res.push_back(curr);
-      curr += step;
-    }
-    return res;
-  }
+
 
   double get_theta_calf(double theta_thigh, double x)
   {

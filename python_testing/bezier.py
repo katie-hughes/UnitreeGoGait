@@ -99,8 +99,23 @@ def bez(points, step):
     curve.append(current)
   return curve
 
+
+def stance(xcoords, delta, y_level):
+  res = []
+  length = xcoords[0] - xcoords[-1]
+  for i in range(0, len(xcoords)):
+    ycoord = -1.0*delta*np.cos((np.pi/length)*xcoords[i]) + y_level
+    res.append(ycoord)
+  return res
+
 curve_x = bez(points_x, step)
 curve_y = bez(points_y, step)
+
+
+sin_x = np.linspace(points[-1][0], points[0][0], 100)
+# print("Sin x:", sin_x)
+sin_y = stance(sin_x, 0.01, points[0][1])
+# print("siny is:", sin_y)
 
 order = len(points)-1
 
@@ -116,12 +131,15 @@ for n,p in enumerate(points):
     ax.plot((prev[0],p[0]),(prev[1],p[1]),linestyle='dashed',color='gray')
   prev = p
 ax.plot(curve_x,curve_y, color='k')
+plt.plot(sin_x, sin_y, color='r')
 ax.legend(bbox_to_anchor=(1.1, 1.05))
 ax.set_title("Bezier Curve Generation: Order "+str(order))
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
+ax.set_ylim(top=0.0)
 ax.set_aspect('equal', 'box')
-fig.tight_layout()
+# fig.tight_layout()
+# fig.layout
 plt.savefig("plots/ws+bezier_"+str(order)+".png")
 plt.show()
 

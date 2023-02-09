@@ -69,6 +69,23 @@ namespace gaitlib{
   /// @return new modulated vector
   std::vector<double> modulate(std::vector<double> ref, double scale);
 
+  /// @brief an implementation of the numpy linspace function.
+  /// Used for forming/ testing simple linear trajectories
+  /// @param start start of trajectory
+  /// @param end end of trajectory
+  /// @param npoints number of points in the trajectory
+  /// @return vector of size npoints ranging from start to end
+  std::vector<double> linspace(double start, double end, double npoints);
+
+  /// @brief Generate the sinusoidal "stance" section of the gait where the foot is on the ground
+  /// @param xcoords vector of the desired x coordinates of the stance
+  /// should start at the final bezier control point and end at the first bezier control point
+  /// such that it connects both ends of the curve!
+  /// @param delta amplitude of the sinusoid
+  /// @param y_level y coordinate of starting/ending bezier control points
+  /// @return vector of the stance section of the gait
+  std::vector<double> stance(std::vector<double> xcoords, double delta, double y_level);
+
 }
 
 #endif

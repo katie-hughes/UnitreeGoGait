@@ -46,4 +46,26 @@ std::vector<double> modulate(std::vector<double> ref, double scale){
   return split2;
 }
 
+
+std::vector<double> linspace(double start, double end, double npoints){
+  std::vector<double> res;
+  double step = (end - start) / npoints;
+  double curr = start;
+  for (int i = 0; i < npoints; i++) {
+    res.push_back(curr);
+    curr += step;
+  }
+  return res;
+}
+
+std::vector<double> stance(std::vector<double> xcoords, double delta, double y_level){
+  std::vector<double> res;
+  double len = xcoords.front() - xcoords.back();
+  for(int i=0; i<xcoords.size(); i++){
+    double ycoord = -1.0*delta*cos((M_PI/len)*xcoords.at(i)) + y_level;
+    res.push_back(ycoord);
+  }
+  return res;
+}
+
 }
