@@ -69,4 +69,10 @@ std::vector<double> stance(std::vector<double> xcoords, double delta, double y_l
   return res;
 }
 
+std::vector<double> concatenate(std::vector<double> v1, std::vector<double> v2){
+  // https://stackoverflow.com/questions/201718/concatenating-two-stdvectors
+  v1.insert( v1.end(), v2.begin(), v2.end() );
+  return v1;
+}
+
 }

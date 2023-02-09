@@ -69,15 +69,23 @@ public:
       stand_floor + swing_height + dswing_height,
       stand_floor,
       stand_floor};
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, period);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, period);
+
+    long npoints_bezier = period*0.75;
+    long npoints_sinusoid = period-npoints_bezier;
+    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
+    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
     RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
+    std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sinusoid);
+    std::vector<double> sin_y = gaitlib::stance(sin_x, 0.05, ctrl_y.at(0));
+
+    const auto final_x = gaitlib::concatenate(bez_x, sin_x);
+    const auto final_y = gaitlib::concatenate(bez_y, sin_y);
 
     // std::vector<double> desired_x = linspace(-l, l, period);
     // std::vector<double> desired_y = linspace(-l, -l, period);
 
     // make_gait();
-    make_desired_gait(bez_x, bez_y);
+    make_desired_gait(final_x, final_y);
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
 

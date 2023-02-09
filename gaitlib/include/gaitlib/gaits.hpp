@@ -86,6 +86,11 @@ namespace gaitlib{
   /// @return vector of the stance section of the gait
   std::vector<double> stance(std::vector<double> xcoords, double delta, double y_level);
 
+  /// @brief concatenate two vectors
+  /// @param v1 first vector
+  /// @param v2 second vector
+  /// @return their concatenation, as a new vector
+  std::vector<double> concatenate(std::vector<double> v1, std::vector<double> v2);
 }
 
 #endif
