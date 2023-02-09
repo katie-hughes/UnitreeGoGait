@@ -11,40 +11,6 @@
 
 using namespace std::chrono_literals;
 
-
-// TODO: should put these functions into a library, like I did for turtlelib
-long factorial(long n){
-  if ((n == 1) || (n == 0)){
-    return 1;
-  } else {
-    return n * factorial(n - 1);
-  }
-}
-
-long choose(long n, long k){
-  return factorial(n)/(factorial(k)*factorial(n-k));
-}
-
-double p_i(long i, long order, double t, double point){
-  return choose(order,i) * pow((1-t),(order-i)) * pow(t,i)*point;
-  // PYTHON VERSION: return choose(order,i)*((1-t)**(order-i))*(t**i)*point;
-}
-
-std::vector<double> bezier(std::vector<double> points, double step){
-  const auto order = points.size();
-  std::vector<double> curve;
-  for (double t = 0.0; t<=1; t+=step){
-    double current = 0;
-    for (int i=0; i<order; i++){
-      current += p_i(i,order-1,t,points.at(i));
-    }
-    curve.push_back(current);
-  }
-  return curve;
-}
-
-
-
 class CustomGait : public rclcpp::Node
 {
   public:
@@ -103,8 +69,8 @@ class CustomGait : public rclcpp::Node
                 stand_floor + swing_height + dswing_height,
                 stand_floor,
                 stand_floor};
-      std::vector<double> bez_x = bezier(ctrl_x, 1.0/period);
-      std::vector<double> bez_y = bezier(ctrl_y, 1.0/period);
+      std::vector<double> bez_x = gaitlib::bezier(ctrl_x, 1.0/period);
+      std::vector<double> bez_y = gaitlib::bezier(ctrl_y, 1.0/period);
       RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: "<<bez_x.size());
 
       // std::vector<double> desired_x = linspace(-l, l, period);
@@ -149,57 +115,57 @@ class CustomGait : public rclcpp::Node
             RCLCPP_INFO_STREAM(get_logger(), "New Step!");
             motiontime = 0;
           }
-          low_cmd_ros.motor_cmd[FR_2].q = fr_calf[motiontime];
-          low_cmd_ros.motor_cmd[FR_2].dq = 0.0;
-          low_cmd_ros.motor_cmd[FR_2].kp = 5.0;
-          low_cmd_ros.motor_cmd[FR_2].kd = 1.0;
-          low_cmd_ros.motor_cmd[FR_0].q = fr_hip[motiontime];
-          low_cmd_ros.motor_cmd[FR_0].dq = 0.0;
-          low_cmd_ros.motor_cmd[FR_0].kp = 5.0;
-          low_cmd_ros.motor_cmd[FR_0].kd = 1.0;
-          low_cmd_ros.motor_cmd[FR_1].q = fr_thigh[motiontime];
-          low_cmd_ros.motor_cmd[FR_1].dq = 0.0;
-          low_cmd_ros.motor_cmd[FR_1].kp = 5.0;
-          low_cmd_ros.motor_cmd[FR_1].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_2].q = fr_calf[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FR_2].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_2].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_2].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_0].q = fr_hip[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FR_0].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_0].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_0].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_1].q = fr_thigh[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FR_1].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_1].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FR_1].kd = 1.0;
 
-          low_cmd_ros.motor_cmd[FL_2].q = fl_calf[motiontime];
-          low_cmd_ros.motor_cmd[FL_2].dq = 0.0;
-          low_cmd_ros.motor_cmd[FL_2].kp = 5.0;
-          low_cmd_ros.motor_cmd[FL_2].kd = 1.0;
-          low_cmd_ros.motor_cmd[FL_0].q = fl_hip[motiontime];
-          low_cmd_ros.motor_cmd[FL_0].dq = 0.0;
-          low_cmd_ros.motor_cmd[FL_0].kp = 5.0;
-          low_cmd_ros.motor_cmd[FL_0].kd = 1.0;
-          low_cmd_ros.motor_cmd[FL_1].q = fl_thigh[motiontime];
-          low_cmd_ros.motor_cmd[FL_1].dq = 0.0;
-          low_cmd_ros.motor_cmd[FL_1].kp = 5.0;
-          low_cmd_ros.motor_cmd[FL_1].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_2].q = fl_calf[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FL_2].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_2].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_2].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_0].q = fl_hip[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FL_0].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_0].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_0].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_1].q = fl_thigh[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::FL_1].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_1].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::FL_1].kd = 1.0;
 
-          low_cmd_ros.motor_cmd[RR_2].q = rr_calf[motiontime];
-          low_cmd_ros.motor_cmd[RR_2].dq = 0.0;
-          low_cmd_ros.motor_cmd[RR_2].kp = 5.0;
-          low_cmd_ros.motor_cmd[RR_2].kd = 1.0;
-          low_cmd_ros.motor_cmd[RR_0].q = rr_hip[motiontime];
-          low_cmd_ros.motor_cmd[RR_0].dq = 0.0;
-          low_cmd_ros.motor_cmd[RR_0].kp = 5.0;
-          low_cmd_ros.motor_cmd[RR_0].kd = 1.0;
-          low_cmd_ros.motor_cmd[RR_1].q = rr_thigh[motiontime];
-          low_cmd_ros.motor_cmd[RR_1].dq = 0.0;
-          low_cmd_ros.motor_cmd[RR_1].kp = 5.0;
-          low_cmd_ros.motor_cmd[RR_1].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_2].q = rr_calf[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RR_2].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_2].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_2].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_0].q = rr_hip[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RR_0].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_0].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_0].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_1].q = rr_thigh[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RR_1].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_1].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RR_1].kd = 1.0;
 
-          low_cmd_ros.motor_cmd[RL_2].q = rl_calf[motiontime];
-          low_cmd_ros.motor_cmd[RL_2].dq = 0.0;
-          low_cmd_ros.motor_cmd[RL_2].kp = 5.0;
-          low_cmd_ros.motor_cmd[RL_2].kd = 1.0;
-          low_cmd_ros.motor_cmd[RL_0].q = rl_hip[motiontime];
-          low_cmd_ros.motor_cmd[RL_0].dq = 0.0;
-          low_cmd_ros.motor_cmd[RL_0].kp = 5.0;
-          low_cmd_ros.motor_cmd[RL_0].kd = 1.0;
-          low_cmd_ros.motor_cmd[RL_1].q = rl_thigh[motiontime];
-          low_cmd_ros.motor_cmd[RL_1].dq = 0.0;
-          low_cmd_ros.motor_cmd[RL_1].kp = 5.0;
-          low_cmd_ros.motor_cmd[RL_1].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_2].q = rl_calf[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RL_2].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_2].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_2].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_0].q = rl_hip[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RL_0].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_0].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_0].kd = 1.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_1].q = rl_thigh[motiontime];
+          low_cmd_ros.motor_cmd[gaitlib::RL_1].dq = 0.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_1].kp = 5.0;
+          low_cmd_ros.motor_cmd[gaitlib::RL_1].kd = 1.0;
       }
       cmd_pub_->publish(low_cmd_ros);
     }

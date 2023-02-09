@@ -1,5 +1,7 @@
 #include "gaitlib/gaits.hpp"
 
+namespace gaitlib{
+
 long factorial(long n){
   if ((n == 1) || (n == 0)){
     return 1;
@@ -27,4 +29,6 @@ std::vector<double> bezier(std::vector<double> points, double step){
     curve.push_back(current);
   }
   return curve;
+}
+
 }
