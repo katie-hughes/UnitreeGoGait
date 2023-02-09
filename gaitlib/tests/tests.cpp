@@ -6,13 +6,43 @@ namespace gaitlib
 {
 
     TEST_CASE("Factorial", "[gaits]")
-    { // Hughes, Katie
+    {
         REQUIRE(factorial(0) == 1);
         REQUIRE(factorial(1) == 1);
         REQUIRE(factorial(2) == 2);
         REQUIRE(factorial(3) == 6);
         REQUIRE(factorial(4) == 24);
         REQUIRE(factorial(5) == 120);
+    }
+
+    TEST_CASE("Choose", "[gaits]")
+    {
+        REQUIRE(choose(0,0) == 1);
+
+        REQUIRE(choose(1,0) == 1);
+        REQUIRE(choose(1,1) == 1);
+
+        REQUIRE(choose(2,0) == 1);
+        REQUIRE(choose(2,1) == 2);
+        REQUIRE(choose(2,2) == 1);
+
+        REQUIRE(choose(3,0) == 1);
+        REQUIRE(choose(3,1) == 3);
+        REQUIRE(choose(3,2) == 3);
+        REQUIRE(choose(3,3) == 1);
+
+        REQUIRE(choose(4,0) == 1);
+        REQUIRE(choose(4,1) == 4);
+        REQUIRE(choose(4,2) == 6);
+        REQUIRE(choose(4,3) == 4);
+        REQUIRE(choose(4,4) == 1);
+
+        REQUIRE(choose(5,0) == 1);
+        REQUIRE(choose(5,1) == 5);
+        REQUIRE(choose(5,2) == 10);
+        REQUIRE(choose(5,3) == 10);
+        REQUIRE(choose(5,4) == 5);
+        REQUIRE(choose(5,5) == 1);
     }
 
 }
