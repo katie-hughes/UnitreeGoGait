@@ -15,6 +15,7 @@
   <exec_depend>ros2launch</exec_depend>
   <depend>rclcpp</depend>
   <depend>ros2_unitree_legged_msgs</depend>
+  <depend>gaitlib</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

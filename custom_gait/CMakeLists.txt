@@ -12,11 +12,13 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(ros2_unitree_legged_msgs REQUIRED)
+find_package(gaitlib REQUIRED)
 
 add_executable(custom_gait src/custom_gait.cpp)
 ament_target_dependencies(custom_gait
   rclcpp
   ros2_unitree_legged_msgs)
+target_link_libraries(custom_gait gaitlib::gaitlib "${cpp_typesupport_target}")
 
 # target_link_libraries(custom_gait "${cpp_typesupport_target}")
 install(TARGETS

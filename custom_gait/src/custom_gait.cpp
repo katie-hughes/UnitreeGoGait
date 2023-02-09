@@ -7,26 +7,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "ros2_unitree_legged_msgs/msg/low_cmd.hpp"
 #include "ros2_unitree_legged_msgs/msg/low_state.hpp"
+#include "gaitlib/gaits.hpp"
 
 using namespace std::chrono_literals;
-
-// copied from quadruped.h
-
-constexpr int FR_0 = 0;      // joint index
-constexpr int FR_1 = 1;      
-constexpr int FR_2 = 2;
-
-constexpr int FL_0 = 3;
-constexpr int FL_1 = 4;
-constexpr int FL_2 = 5;
-
-constexpr int RR_0 = 6;
-constexpr int RR_1 = 7;
-constexpr int RR_2 = 8;
-
-constexpr int RL_0 = 9;
-constexpr int RL_1 = 10;
-constexpr int RL_2 = 11;
 
 
 // TODO: should put these functions into a library, like I did for turtlelib
