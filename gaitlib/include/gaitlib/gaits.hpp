@@ -59,9 +59,9 @@ namespace gaitlib{
 
   /// @brief Generate a bezier curve
   /// @param points: Control points for the bezier
-  /// @param step: Step size to take while traversing t=0 to t=1.
+  /// @param npoints: number of points in the resulting curve
   /// @return bezier curve following the control points
-  std::vector<double> bezier(std::vector<double> points, double step);
+  std::vector<double> bezier(std::vector<double> points, long npoints);
 
   /// @brief Modulte a vector
   /// @param ref reference input vector

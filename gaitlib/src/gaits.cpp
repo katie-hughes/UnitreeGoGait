@@ -18,10 +18,11 @@ double p_i(long i, long order, double t, double point){
   return choose(order,i) * pow((1-t),(order-i)) * pow(t,i)*point;
 }
 
-std::vector<double> bezier(std::vector<double> points, double step){
+std::vector<double> bezier(std::vector<double> points, long npoints){
   long order = points.size();
   std::vector<double> curve;
-  for (double t = 0.0; t<=1; t+=step){
+  for (long p = 0; p<npoints; p++){
+    double t = static_cast<double>(p)/static_cast<double>(npoints);
     double current = 0;
     for (long i=0; i<order; i++){
       current += p_i(i,order-1,t,points.at(i));
@@ -61,7 +62,7 @@ std::vector<double> linspace(double start, double end, double npoints){
 std::vector<double> stance(std::vector<double> xcoords, double delta, double y_level){
   std::vector<double> res;
   double len = xcoords.front() - xcoords.back();
-  for(int i=0; i<xcoords.size(); i++){
+  for(long i=0; i<static_cast<long>(xcoords.size()); i++){
     double ycoord = -1.0*delta*cos((M_PI/len)*xcoords.at(i)) + y_level;
     res.push_back(ycoord);
   }

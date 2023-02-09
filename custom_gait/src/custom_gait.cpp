@@ -69,8 +69,8 @@ public:
       stand_floor + swing_height + dswing_height,
       stand_floor,
       stand_floor};
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, 1.0 / period);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, 1.0 / period);
+    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, period);
+    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, period);
     RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
 
     // std::vector<double> desired_x = linspace(-l, l, period);
