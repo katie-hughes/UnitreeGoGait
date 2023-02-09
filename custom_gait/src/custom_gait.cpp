@@ -85,7 +85,17 @@ public:
     // std::vector<double> desired_y = linspace(-l, -l, period);
 
     // make_gait();
-    make_desired_gait(final_x, final_y);
+    make_fr_gait(final_x, final_y);
+    // Next: MODULATE based on fr
+    fl_calf = gaitlib::modulate(fr_calf, 0.5);
+    fl_thigh = gaitlib::modulate(fr_thigh, 0.5);
+
+    rr_calf = gaitlib::modulate(fr_calf, 0.5);
+    rr_thigh = gaitlib::modulate(fr_thigh, 0.5);
+
+    rl_calf = gaitlib::modulate(fr_calf, 0.0);
+    rl_thigh = gaitlib::modulate(fr_thigh, 0.0);
+
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
 
@@ -128,7 +138,7 @@ private:
       low_cmd_ros.motor_cmd[gaitlib::FR_2].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::FR_2].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::FR_2].kd = 1.0;
-      low_cmd_ros.motor_cmd[gaitlib::FR_0].q = fr_hip[motiontime];
+      low_cmd_ros.motor_cmd[gaitlib::FR_0].q = 0.0; // fr_hip[motiontime];
       low_cmd_ros.motor_cmd[gaitlib::FR_0].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::FR_0].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::FR_0].kd = 1.0;
@@ -141,7 +151,7 @@ private:
       low_cmd_ros.motor_cmd[gaitlib::FL_2].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::FL_2].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::FL_2].kd = 1.0;
-      low_cmd_ros.motor_cmd[gaitlib::FL_0].q = fl_hip[motiontime];
+      low_cmd_ros.motor_cmd[gaitlib::FL_0].q = 0.0; // fl_hip[motiontime];
       low_cmd_ros.motor_cmd[gaitlib::FL_0].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::FL_0].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::FL_0].kd = 1.0;
@@ -154,7 +164,7 @@ private:
       low_cmd_ros.motor_cmd[gaitlib::RR_2].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::RR_2].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::RR_2].kd = 1.0;
-      low_cmd_ros.motor_cmd[gaitlib::RR_0].q = rr_hip[motiontime];
+      low_cmd_ros.motor_cmd[gaitlib::RR_0].q = 0.0; // rr_hip[motiontime];
       low_cmd_ros.motor_cmd[gaitlib::RR_0].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::RR_0].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::RR_0].kd = 1.0;
@@ -167,7 +177,7 @@ private:
       low_cmd_ros.motor_cmd[gaitlib::RL_2].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::RL_2].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::RL_2].kd = 1.0;
-      low_cmd_ros.motor_cmd[gaitlib::RL_0].q = rl_hip[motiontime];
+      low_cmd_ros.motor_cmd[gaitlib::RL_0].q = 0.0; // rl_hip[motiontime];
       low_cmd_ros.motor_cmd[gaitlib::RL_0].dq = 0.0;
       low_cmd_ros.motor_cmd[gaitlib::RL_0].kp = 5.0;
       low_cmd_ros.motor_cmd[gaitlib::RL_0].kd = 1.0;
@@ -254,7 +264,7 @@ private:
     }
   }
 
-  void make_desired_gait(std::vector<double> desired_x, std::vector<double> desired_y)
+  void make_fr_gait(std::vector<double> desired_x, std::vector<double> desired_y)
   {
     if (desired_x.size() != desired_y.size()) {
       RCLCPP_INFO_STREAM(get_logger(), "Desired X and Desired Y different lengths???");
@@ -271,19 +281,19 @@ private:
             ") ->\t(theta_t, theta_c)=(" <<
             ik_result[0] << "," << ik_result[1] << ")");
         fr_calf.push_back(ik_result[1]);
-        fl_calf.push_back(calf_base);
-        rr_calf.push_back(calf_base);
-        rl_calf.push_back(calf_base);
+        // fl_calf.push_back(calf_base);
+        // rr_calf.push_back(calf_base);
+        // rl_calf.push_back(calf_base);
 
         fr_thigh.push_back(ik_result[0]);
-        fl_thigh.push_back(thigh_base);
-        rr_thigh.push_back(thigh_base);
-        rl_thigh.push_back(thigh_base);
+        // fl_thigh.push_back(thigh_base);
+        // rr_thigh.push_back(thigh_base);
+        // rl_thigh.push_back(thigh_base);
 
-        fr_hip.push_back(hip_base);
-        fl_hip.push_back(hip_base);
-        rr_hip.push_back(hip_base);
-        rl_hip.push_back(hip_base);
+        // fr_hip.push_back(hip_base);
+        // fl_hip.push_back(hip_base);
+        // rr_hip.push_back(hip_base);
+        // rl_hip.push_back(hip_base);
       }
     }
   }
