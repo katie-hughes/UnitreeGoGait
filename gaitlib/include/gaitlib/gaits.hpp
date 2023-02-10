@@ -9,34 +9,35 @@
 namespace gaitlib{
 
   // The following Joint IDs were taken from Unitree's quadruped.hpp
+  // these are used to index the appropriate joints in their low_cmd message.
 
   /// @brief Front Right Hip Joint
-  constexpr int FR_0 = 0;
+  constexpr int FR_HIP = 0;
   /// @brief Front Right Thigh Joint
-  constexpr int FR_1 = 1;
+  constexpr int FR_THIGH = 1;
   /// @brief Front Right Calf Joint
-  constexpr int FR_2 = 2;
+  constexpr int FR_CALF = 2;
 
   /// @brief Front Left Hip Joint
-  constexpr int FL_0 = 3;
+  constexpr int FL_HIP = 3;
   /// @brief Front Left Thigh Joint
-  constexpr int FL_1 = 4;
+  constexpr int FL_THIGH = 4;
   /// @brief Front Left Calf Joint
-  constexpr int FL_2 = 5;
+  constexpr int FL_CALF = 5;
 
   /// @brief Rear Right Hip Joint
-  constexpr int RR_0 = 6;
+  constexpr int RR_HIP = 6;
   /// @brief Rear Right Thigh Joint
-  constexpr int RR_1 = 7;
+  constexpr int RR_THIGH = 7;
   /// @brief Rear Right Calf Joint
-  constexpr int RR_2 = 8;
+  constexpr int RR_CALF = 8;
 
   /// @brief Rear Left Hip Joint
-  constexpr int RL_0 = 9;
+  constexpr int RL_HIP = 9;
   /// @brief Rear Left Thigh Joint
-  constexpr int RL_1 = 10;
+  constexpr int RL_THIGH = 10;
   /// @brief Rear Left Calf Joint
-  constexpr int RL_2 = 11;
+  constexpr int RL_CALF = 11;
 
   /// @brief 
   /// @param n 
