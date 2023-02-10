@@ -151,53 +151,53 @@ private:
       low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
-      low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; // fr_hip[motiontime];
-      low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
-      low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
-      low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
       low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh[motiontime];
       low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
+      low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; // fr_hip[motiontime];
+      low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
+      low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
+      low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
 
       low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf[motiontime];
       low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
-      low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; // fl_hip[motiontime];
-      low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
-      low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
-      low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
       low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh[motiontime];
       low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
+      low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; // fl_hip[motiontime];
+      low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
+      low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
+      low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
 
       low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf[motiontime];
       low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
-      low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; // rr_hip[motiontime];
-      low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
-      low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
-      low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
       low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh[motiontime];
       low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
+      low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; // rr_hip[motiontime];
+      low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
+      low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
+      low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
 
       low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf[motiontime];
       low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
-      low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; // rl_hip[motiontime];
-      low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
-      low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
-      low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
       low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh[motiontime];
       low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
       low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
       low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
+      low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; // rl_hip[motiontime];
+      low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
+      low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
+      low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
     }
     cmd_pub_->publish(low_cmd);
   }
@@ -242,19 +242,7 @@ private:
             ") ->\t(theta_t, theta_c)=(" <<
             ik_result[0] << "," << ik_result[1] << ")");
         fr_calf.push_back(ik_result[1]);
-        // fl_calf.push_back(calf_base);
-        // rr_calf.push_back(calf_base);
-        // rl_calf.push_back(calf_base);
-
         fr_thigh.push_back(ik_result[0]);
-        // fl_thigh.push_back(thigh_base);
-        // rr_thigh.push_back(thigh_base);
-        // rl_thigh.push_back(thigh_base);
-
-        // fr_hip.push_back(hip_base);
-        // fl_hip.push_back(hip_base);
-        // rr_hip.push_back(hip_base);
-        // rl_hip.push_back(hip_base);
       }
     }
   }
