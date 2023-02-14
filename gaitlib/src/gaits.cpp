@@ -75,4 +75,25 @@ std::vector<double> concatenate(std::vector<double> v1, std::vector<double> v2){
   return v1;
 }
 
+double get_theta_calf(double theta_thigh, double x, double l)
+  {
+    return asin(-x / l - sin(theta_thigh)) - theta_thigh;
+  }
+
+std::vector<double> ik(double x, double y, double l)
+  {
+    double alpha = acos(sqrt(x * x + y * y) / (2 * l));
+    double gamma = atan(x / y);
+    double theta_thigh_left = gamma + alpha;
+    double theta_calf_left = get_theta_calf(theta_thigh_left, x, l);
+    double theta_thigh_right = gamma - alpha;
+    double theta_calf_right = get_theta_calf(theta_thigh_right, x, l);
+    std::vector<double> res;
+    res.push_back(theta_thigh_left);
+    res.push_back(theta_calf_left);
+    res.push_back(theta_thigh_right);
+    res.push_back(theta_calf_right);
+    return res;
+  }
+
 }

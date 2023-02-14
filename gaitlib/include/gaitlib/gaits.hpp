@@ -92,6 +92,21 @@ namespace gaitlib{
   /// @param v2 second vector
   /// @return their concatenation, as a new vector
   std::vector<double> concatenate(std::vector<double> v1, std::vector<double> v2);
+
+  /// @brief helper to calculate the calf joint of the leg given theta_thigh and x.
+  /// @param theta_thigh thigh angle (radians)
+  /// @param x desired x coordinate WRT hip as origin (m)
+  /// @param l length of thigh and calf segments (m)
+  /// @return calf angle (radians)
+  double get_theta_calf(double theta_thigh, double x, double l);
+
+  /// @brief Return joint angles that put the foot at a desired x,y for leg segment l
+  /// @param x desired x coordinate WRT hip as origin (m)
+  /// @param y desired y coordinate WRT hip as origin (m)
+  /// @param l length of thigh and calf segments (m)
+  /// @return vector [theta_thigh1, theta_calf1, theta_thigh2, theta_calf2]
+  /// where (theta_thigh1, theta_calf1) and (theta_thigh2, theta_calf2) are the 2 solutions.
+  std::vector<double> ik(double x, double y, double l);
 }
 
 #endif

@@ -202,28 +202,28 @@ private:
     cmd_pub_->publish(low_cmd);
   }
 
-  double get_theta_calf(double theta_thigh, double x)
-  {
-    return asin(-x / l - sin(theta_thigh)) - theta_thigh;
-  }
+  // double get_theta_calf(double theta_thigh, double x)
+  // {
+  //   return asin(-x / l - sin(theta_thigh)) - theta_thigh;
+  // }
 
-  // Given an x and y (WRT hip joint), return possible joint angles
-  // First two in the vector are the "lefty" solution, and last 2 are "righty"
-  std::vector<double> ik(double x, double y)
-  {
-    double alpha = acos(sqrt(x * x + y * y) / (2 * l));
-    double gamma = atan(x / y);
-    double theta_thigh_left = gamma + alpha;
-    double theta_calf_left = get_theta_calf(theta_thigh_left, x);
-    double theta_thigh_right = gamma - alpha;
-    double theta_calf_right = get_theta_calf(theta_thigh_right, x);
-    std::vector<double> res;
-    res.push_back(theta_thigh_left);
-    res.push_back(theta_calf_left);
-    res.push_back(theta_thigh_right);
-    res.push_back(theta_calf_right);
-    return res;
-  }
+  // // Given an x and y (WRT hip joint), return possible joint angles
+  // // First two in the vector are the "lefty" solution, and last 2 are "righty"
+  // std::vector<double> ik(double x, double y)
+  // {
+  //   double alpha = acos(sqrt(x * x + y * y) / (2 * l));
+  //   double gamma = atan(x / y);
+  //   double theta_thigh_left = gamma + alpha;
+  //   double theta_calf_left = get_theta_calf(theta_thigh_left, x);
+  //   double theta_thigh_right = gamma - alpha;
+  //   double theta_calf_right = get_theta_calf(theta_thigh_right, x);
+  //   std::vector<double> res;
+  //   res.push_back(theta_thigh_left);
+  //   res.push_back(theta_calf_left);
+  //   res.push_back(theta_thigh_right);
+  //   res.push_back(theta_calf_right);
+  //   return res;
+  // }
 
   void make_fr_gait(std::vector<double> desired_x, std::vector<double> desired_y)
   {
@@ -233,7 +233,7 @@ private:
       RCLCPP_INFO_STREAM(get_logger(), "Generating Trajectory");
       std::vector<double> ik_result;
       for (int i = 0; i < period; i++) {
-        ik_result = ik(desired_x[i], desired_y[i]);
+        ik_result = gaitlib::ik(desired_x[i], desired_y[i], l);
         // Here we just arbitrarily choose left result (it maintained joint limits in my example)
         // The left thigh result is 0th element and calf result is 1st
         // Keep rest of joints stationary for now
