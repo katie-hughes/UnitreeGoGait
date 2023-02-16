@@ -64,7 +64,7 @@ public:
     const auto lspan = 0.10;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto stand_floor = -1.5 * l; // y distance when the foot is on the floor.
+    const auto stand_floor = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
     const auto swing_height = 0.05;   // ???
     const auto dswing_height = 0.025;   // ??
     ctrl_x = {-1.0 * lspan,
@@ -118,7 +118,20 @@ public:
 
     // create a standing up movement. Should be defined by # of seconds probably
 
-    // const auto stand_up = gaitlib::linspace(0, -2*l, period);
+    const auto stand_up_y = gaitlib::linspace(0, stand_floor, period);
+    std::vector<double> stand_up_x(period, 0.0);
+
+    const auto stand_gaits = gaitlib::make_gait(stand_up_x, stand_up_y);
+
+    fr_calf_stand = stand_gaits.gait_calf;
+    fr_thigh_stand = stand_gaits.gait_thigh;
+    fl_calf_stand = stand_gaits.gait_calf;
+    fl_thigh_stand = stand_gaits.gait_thigh;
+    rr_calf_stand = stand_gaits.gait_calf;
+    rr_thigh_stand = stand_gaits.gait_thigh;
+    rl_calf_stand = stand_gaits.gait_calf;
+    rl_thigh_stand = stand_gaits.gait_thigh;
+
 
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
@@ -149,11 +162,73 @@ private:
         {
         count ++;
         if (count > delay) {
-          RCLCPP_INFO_STREAM(get_logger(), "Start moving!");
-          state = WALK;
+          RCLCPP_INFO_STREAM(get_logger(), "Stand Up!");
+          state = STANDUP;
         }
         break;
         }
+      case STANDUP:
+      {
+        motiontime += 1;
+        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
+        if (motiontime >= period) {
+          RCLCPP_INFO_STREAM(get_logger(), "Start Walking!");
+          motiontime = 0;
+          state = WALK;
+        }
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand[motiontime];
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
+        break;
+      }
       case WALK:
       {
         motiontime += 1;
@@ -170,7 +245,7 @@ private:
         low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; // fr_hip[motiontime];
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
@@ -183,7 +258,7 @@ private:
         low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; // fl_hip[motiontime];
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
@@ -196,7 +271,7 @@ private:
         low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; // rr_hip[motiontime];
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
@@ -209,7 +284,7 @@ private:
         low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; // rl_hip[motiontime];
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
@@ -233,8 +308,9 @@ private:
   std::vector<int> feets;
   long period;
   long delay;
-  std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh,
-    fr_hip, fl_hip, rr_hip, rl_hip;
+  std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh;
+  std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
+                      fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
   // This is the length of the legs.
   double l = 0.213;
   // Define joint limits
