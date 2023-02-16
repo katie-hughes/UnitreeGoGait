@@ -141,8 +141,8 @@ public:
 
 
     const auto standing_joints = gaitlib::ik(0.0, stand_y);
-    stand_calf = standing_joints.at(1);
-    stand_thigh = standing_joints.at(0);
+    stand_calf = standing_joints.calf_lefty;
+    stand_thigh = standing_joints.thigh_lefty;
 
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
@@ -309,7 +309,6 @@ private:
         low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
-        motiontime += 1;
         break;
       }
       case WALK:

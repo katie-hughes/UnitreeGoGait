@@ -50,6 +50,19 @@ namespace gaitlib{
     std::vector<double> gait_thigh;
   };
 
+  /// @brief Way of packaging the solution for the IK of the legs
+  /// (thigh_lefty, calf_lefty) is one solution and (thigh_righty, calf_righty) is the other
+  struct IKResult {
+    /// @brief lefty thigh angle in radians
+    double thigh_lefty;
+    /// @brief lefty calf angle in radians
+    double calf_lefty;
+    /// @brief righty thigh angle in radians
+    double thigh_righty;
+    /// @brief righty calf angle in radians
+    double calf_righty;
+  };
+
   /// @brief 
   /// @param n 
   /// @return 
@@ -113,9 +126,8 @@ namespace gaitlib{
   /// @brief Return joint angles that put the foot at a desired x,y for leg segment l
   /// @param x desired x coordinate WRT hip as origin (m)
   /// @param y desired y coordinate WRT hip as origin (m)
-  /// @return vector [theta_thigh1, theta_calf1, theta_thigh2, theta_calf2]
-  /// where (theta_thigh1, theta_calf1) and (theta_thigh2, theta_calf2) are the 2 solutions.
-  std::vector<double> ik(double x, double y);
+  /// @return the set of two solutions (righty and lefty) for joint angles thigh and calf.
+  IKResult ik(double x, double y);
 
   /// @brief Create joint trajectories for calf and thigh for desired foot trajectory
   /// @param desired_x desired x trajectory of foot

@@ -80,7 +80,7 @@ double get_theta_calf(double theta_thigh, double x)
     return asin(-x / LEG_LENGTH - sin(theta_thigh)) - theta_thigh;
   }
 
-std::vector<double> ik(double x, double y)
+IKResult ik(double x, double y)
   {
     double alpha = acos(sqrt(x * x + y * y) / (2 * LEG_LENGTH));
     double gamma = atan(x / y);
@@ -88,11 +88,8 @@ std::vector<double> ik(double x, double y)
     double theta_calf_left = get_theta_calf(theta_thigh_left, x);
     double theta_thigh_right = gamma - alpha;
     double theta_calf_right = get_theta_calf(theta_thigh_right, x);
-    std::vector<double> res;
-    res.push_back(theta_thigh_left);
-    res.push_back(theta_calf_left);
-    res.push_back(theta_thigh_right);
-    res.push_back(theta_calf_right);
+    IKResult res{theta_thigh_left, theta_calf_left,
+                 theta_thigh_right, theta_calf_right};
     return res;
   }
 
@@ -101,14 +98,14 @@ MyGait make_gait(std::vector<double> desired_x, std::vector<double> desired_y)
     std::vector<double> gait_calf;
     std::vector<double> gait_thigh;
     if (desired_x.size() == desired_y.size()) {
-      std::vector<double> ik_result;
+      // std::vector<double> ik_result;
       for (size_t i = 0; i < desired_x.size(); i++) {
-        ik_result = ik(desired_x[i], desired_y[i]);
+        const auto ik_result = ik(desired_x[i], desired_y[i]);
         // Here we just arbitrarily choose left result (it maintained joint limits in my example)
         // The left thigh result is 0th element and calf result is 1st
         // Keep rest of joints stationary for now
-        gait_calf.push_back(ik_result[1]);
-        gait_thigh.push_back(ik_result[0]);
+        gait_calf.push_back(ik_result.calf_lefty);
+        gait_thigh.push_back(ik_result.thigh_lefty);
       }
     }
     return MyGait{gait_calf, gait_thigh};
