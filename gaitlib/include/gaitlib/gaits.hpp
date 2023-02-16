@@ -44,7 +44,9 @@ namespace gaitlib{
 
   /// @brief Way of packaging the joint trajectories for both thigh and calf.
   struct MyGait {
+    /// @brief Calf trajectory
     std::vector<double> gait_calf;
+    /// @brief Thigh trajectory
     std::vector<double> gait_thigh;
   };
 
