@@ -160,14 +160,14 @@ private:
   {
     switch(state){
       case WAIT:
-        {
+      {
         count ++;
         if (count > delay) {
           RCLCPP_INFO_STREAM(get_logger(), "Stand Up!");
           state = STANDUP;
         }
         break;
-        }
+      }
       case STANDUP:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(motiontime);
@@ -309,7 +309,9 @@ private:
   std::vector<int> feets;
   long period;
   long delay;
+  // these hold the primary gait
   std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh;
+  // these hold the standing gaits
   std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
                       fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
   // This is the length of the legs.
