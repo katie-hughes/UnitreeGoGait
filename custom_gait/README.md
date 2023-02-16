@@ -11,10 +11,10 @@ Before you can use this package, use the `unitree.repos` file in order to also c
   * Parameter `seconds_per_swing`: How many seconds it takes for one leg to complete a full step. Default = 2.0 sec.
 
 ## Launchfiles
-* `ros2 launch custom_gait custom_gait.launch.py`: This launches the `custom_gait` node, the `udp_low` node from the `unitree_legged_real` package (to send generated gaits to the real robot), and the `visualize.launch.py` launchfile from the `go1_description` package (to visualize the movements in rviz). Even if you are not physically connected to the robot, you will still see the robot move
+* `ros2 launch custom_gait custom_gait.launch.py`: This launches the `custom_gait` node, the `udp_low` node from the `unitree_legged_real` package (to send generated gaits to the real robot), and the `visualize.launch.py` launchfile from the `go1_description` package (to visualize the movements in rviz). Even if you are not physically connected to the robot, you will still see the robot move.
 
 
-Here is a video of a gait I generated using an 11-th order Bezier curve (with 12 control points), plus a sinusoidal section for the "strike" portion of the swing (which connects the two endpoints of the curve).
+Here is a video of a gait I generated using an 11-th order Bezier curve (12 control points), plus a sinusoidal section for the "strike" portion of the swing (which connects the two endpoints of the Bezier curve).
 
 
 [Screencast from 02-10-2023 02:12:07 PM.webm](https://user-images.githubusercontent.com/53623710/218196692-e11d45ed-0b68-4e45-9935-aba4aa1d3c14.webm)
