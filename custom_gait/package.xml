@@ -16,6 +16,7 @@
   <depend>rclcpp</depend>
   <depend>ros2_unitree_legged_msgs</depend>
   <depend>gaitlib</depend>
+  <depend>std_srvs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

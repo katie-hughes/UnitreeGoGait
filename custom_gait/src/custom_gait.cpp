@@ -8,13 +8,15 @@
 #include "ros2_unitree_legged_msgs/msg/low_cmd.hpp"
 #include "ros2_unitree_legged_msgs/msg/low_state.hpp"
 #include "gaitlib/gaits.hpp"
+#include "std_srvs/srv/empty.hpp"
 
 using namespace std::chrono_literals;
 
 
 enum State{WAIT,
            STANDUP,
-           WALK};
+           WALK,
+           STANDSTILL};
 
 class CustomGait : public rclcpp::Node
 {
@@ -44,6 +46,10 @@ public:
       "low_state", 10,
       std::bind(&CustomGait::state_cb, this, std::placeholders::_1));
 
+    switch_gait_ = create_service<std_srvs::srv::Empty>(
+      "switch",
+      std::bind(&CustomGait::switch_gait, this, std::placeholders::_1, std::placeholders::_2));
+
     timer_ = create_wall_timer(
       rate,
       std::bind(&CustomGait::timer_callback, this));
@@ -64,7 +70,7 @@ public:
     const auto lspan = 0.10;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto stand_floor = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
+    stand_y = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
     const auto swing_height = 0.05;   // ???
     const auto dswing_height = 0.025;   // ??
     ctrl_x = {-1.0 * lspan,
@@ -79,18 +85,18 @@ public:
       lspan + dl + ddl,
       lspan + dl,
       lspan};
-    ctrl_y = {stand_floor,
-      stand_floor,
-      stand_floor + swing_height,
-      stand_floor + swing_height,
-      stand_floor + swing_height,
-      stand_floor + swing_height,
-      stand_floor + swing_height,
-      stand_floor + swing_height + dswing_height,
-      stand_floor + swing_height + dswing_height,
-      stand_floor + swing_height + dswing_height,
-      stand_floor,
-      stand_floor};
+    ctrl_y = {stand_y,
+      stand_y,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y,
+      stand_y};
 
     long npoints_bezier = period*0.75;
     long npoints_sinusoid = period-npoints_bezier;
@@ -118,7 +124,7 @@ public:
 
     // create a standing up movement. Should be defined by # of seconds probably
     long standing_points = rate_hz * 5;
-    const auto stand_up_y = gaitlib::linspace(0, stand_floor, standing_points);
+    const auto stand_up_y = gaitlib::linspace(0, stand_y, standing_points);
     // should x coordinate always be at 0?
     std::vector<double> stand_up_x(standing_points, 0.0);
 
@@ -134,10 +140,30 @@ public:
     rl_thigh_stand = stand_gaits.gait_thigh;
 
 
+    const auto standing_joints = gaitlib::ik(0.0, stand_y);
+    stand_calf = standing_joints.at(1);
+    stand_thigh = standing_joints.at(0);
+
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
 
 private:
+  /// @brief Switch gait type between standing/walking
+  /// @param Request: The empty request
+  /// @param Response: The empty response
+  void switch_gait(
+    std::shared_ptr<std_srvs::srv::Empty::Request>,
+    std::shared_ptr<std_srvs::srv::Empty::Response>)
+  {
+    RCLCPP_INFO_STREAM(get_logger(), "Switch Gait");
+    if (state == WALK){
+      state = STANDSTILL;
+      motiontime = 0;
+    } else if (state == STANDSTILL){
+      state = WALK;
+      motiontime = 0;
+    }
+  }
   void state_cb(const ros2_unitree_legged_msgs::msg::LowState & msg)
   {
     if (feets.size() == 0) {
@@ -224,10 +250,66 @@ private:
         motiontime += 1;
         // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
         if (motiontime >= static_cast<long>(fr_calf_stand.size())) {
-          RCLCPP_INFO_STREAM(get_logger(), "Start Walking!");
+          RCLCPP_INFO_STREAM(get_logger(), "Standstill!");
           motiontime = 0;
-          state = WALK;
+          state = STANDSTILL;
         }
+        break;
+      }
+      case STANDSTILL:
+      {
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = stand_calf;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = stand_calf;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = stand_calf;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = stand_calf;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
+        motiontime += 1;
         break;
       }
       case WALK:
@@ -301,6 +383,7 @@ private:
   }
 
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
   ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
   long motiontime = 0;
   int count = 0;
@@ -330,6 +413,8 @@ private:
   // Control points for bezier curve
   std::vector<double> ctrl_x, ctrl_y;
   State state = WAIT;
+  // y coordinate the foot is at WRT hip when standing still
+  double stand_y, stand_calf, stand_thigh;
 };
 
 
