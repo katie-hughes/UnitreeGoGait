@@ -117,9 +117,10 @@ public:
     rl_thigh = gaitlib::modulate(fr_thigh, 0.0);
 
     // create a standing up movement. Should be defined by # of seconds probably
-
-    const auto stand_up_y = gaitlib::linspace(0, stand_floor, period);
-    std::vector<double> stand_up_x(period, 0.0);
+    long standing_points = rate_hz * 5;
+    const auto stand_up_y = gaitlib::linspace(0, stand_floor, standing_points);
+    // should x coordinate always be at 0?
+    std::vector<double> stand_up_x(standing_points, 0.0);
 
     const auto stand_gaits = gaitlib::make_gait(stand_up_x, stand_up_y);
 
@@ -169,79 +170,73 @@ private:
         }
       case STANDUP:
       {
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
+        low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
         motiontime += 1;
         // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
-        if (motiontime >= period) {
+        if (motiontime >= static_cast<long>(fr_calf_stand.size())) {
           RCLCPP_INFO_STREAM(get_logger(), "Start Walking!");
           motiontime = 0;
           state = WALK;
         }
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
-
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
-
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
-
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand[motiontime];
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
         break;
       }
       case WALK:
       {
-        motiontime += 1;
-        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
-        if (motiontime >= period) {
-          RCLCPP_INFO_STREAM(get_logger(), "New Step!");
-          motiontime = 0;
-        }
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf[motiontime];
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh[motiontime];
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
@@ -250,11 +245,11 @@ private:
         low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf[motiontime];
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh[motiontime];
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
@@ -263,11 +258,11 @@ private:
         low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf[motiontime];
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh[motiontime];
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
@@ -276,11 +271,11 @@ private:
         low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf[motiontime];
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh[motiontime];
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
@@ -288,6 +283,12 @@ private:
         low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
         low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
+        motiontime += 1;
+        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
+        if (motiontime >= static_cast<long>(fr_calf.size())) {
+          RCLCPP_INFO_STREAM(get_logger(), "New Step!");
+          motiontime = 0;
+        }
         break;
       }
       default:
