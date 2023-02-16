@@ -13,7 +13,7 @@ using namespace std::chrono_literals;
 
 
 enum State{WAIT,
-           STAND,
+           STANDUP,
            WALK};
 
 class CustomGait : public rclcpp::Node
@@ -103,7 +103,9 @@ public:
     const auto final_x = gaitlib::concatenate(bez_x, sin_x);
     const auto final_y = gaitlib::concatenate(bez_y, sin_y);
 
-    make_fr_gait(final_x, final_y);
+    const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
+    fr_calf = fr_gaits.gait_calf;
+    fr_thigh = fr_gaits.gait_thigh;
     // Next: MODULATE based on fr
     fl_calf = gaitlib::modulate(fr_calf, 0.5);
     fl_thigh = gaitlib::modulate(fr_thigh, 0.5);
@@ -113,6 +115,10 @@ public:
 
     rl_calf = gaitlib::modulate(fr_calf, 0.0);
     rl_thigh = gaitlib::modulate(fr_thigh, 0.0);
+
+    // create a standing up movement. Should be defined by # of seconds probably
+
+    // const auto stand_up = gaitlib::linspace(0, -2*l, period);
 
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
@@ -215,35 +221,12 @@ private:
         break;
       }
     }
-      cmd_pub_->publish(low_cmd);
-  }
-
-  void make_fr_gait(std::vector<double> desired_x, std::vector<double> desired_y)
-  {
-    if (desired_x.size() != desired_y.size()) {
-      RCLCPP_INFO_STREAM(get_logger(), "Desired X and Desired Y different lengths???");
-    } else {
-      RCLCPP_INFO_STREAM(get_logger(), "Generating Trajectory");
-      std::vector<double> ik_result;
-      for (int i = 0; i < period; i++) {
-        ik_result = gaitlib::ik(desired_x[i], desired_y[i], l);
-        // Here we just arbitrarily choose left result (it maintained joint limits in my example)
-        // The left thigh result is 0th element and calf result is 1st
-        // Keep rest of joints stationary for now
-        RCLCPP_INFO_STREAM(
-          get_logger(), "(x,y)=(" << desired_x[i] << "," << desired_y[i] <<
-            ") ->\t(theta_t, theta_c)=(" <<
-            ik_result[0] << "," << ik_result[1] << ")");
-        fr_calf.push_back(ik_result[1]);
-        fr_thigh.push_back(ik_result[0]);
-      }
-    }
+    cmd_pub_->publish(low_cmd);
   }
 
   rclcpp::TimerBase::SharedPtr timer_;
   ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
   long motiontime = 0;
-  bool initiated_flag = false;
   int count = 0;
   rclcpp::Publisher<ros2_unitree_legged_msgs::msg::LowCmd>::SharedPtr cmd_pub_;
   rclcpp::Subscription<ros2_unitree_legged_msgs::msg::LowState>::SharedPtr state_sub_;

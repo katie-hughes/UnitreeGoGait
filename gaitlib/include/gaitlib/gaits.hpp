@@ -11,6 +11,9 @@ namespace gaitlib{
   // The following Joint IDs were taken from Unitree's quadruped.hpp
   // these are used to index the appropriate joints in their low_cmd message.
 
+  /// @brief Length of each leg segment (thigh->calf,calf->foot) in m.
+  constexpr double LEG_LENGTH = 0.213;
+
   /// @brief Front Right Hip Joint
   constexpr int FR_HIP = 0;
   /// @brief Front Right Thigh Joint
@@ -38,6 +41,12 @@ namespace gaitlib{
   constexpr int RL_THIGH = 10;
   /// @brief Rear Left Calf Joint
   constexpr int RL_CALF = 11;
+
+  /// @brief Way of packaging the joint trajectories for both thigh and calf.
+  struct MyGait {
+    std::vector<double> gait_calf;
+    std::vector<double> gait_thigh;
+  };
 
   /// @brief 
   /// @param n 
@@ -96,17 +105,21 @@ namespace gaitlib{
   /// @brief helper to calculate the calf joint of the leg given theta_thigh and x.
   /// @param theta_thigh thigh angle (radians)
   /// @param x desired x coordinate WRT hip as origin (m)
-  /// @param l length of thigh and calf segments (m)
   /// @return calf angle (radians)
-  double get_theta_calf(double theta_thigh, double x, double l);
+  double get_theta_calf(double theta_thigh, double x);
 
   /// @brief Return joint angles that put the foot at a desired x,y for leg segment l
   /// @param x desired x coordinate WRT hip as origin (m)
   /// @param y desired y coordinate WRT hip as origin (m)
-  /// @param l length of thigh and calf segments (m)
   /// @return vector [theta_thigh1, theta_calf1, theta_thigh2, theta_calf2]
   /// where (theta_thigh1, theta_calf1) and (theta_thigh2, theta_calf2) are the 2 solutions.
-  std::vector<double> ik(double x, double y, double l);
+  std::vector<double> ik(double x, double y);
+
+  /// @brief Create joint trajectories for calf and thigh for desired foot trajectory
+  /// @param desired_x desired x trajectory of foot
+  /// @param desired_y desired y trajectory of foot
+  /// @return the calf and thigh joint trajectories
+  MyGait make_gait(std::vector<double> desired_x, std::vector<double> desired_y);
 }
 
 #endif
