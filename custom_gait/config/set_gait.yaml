@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    seconds_per_swing: 2.0
+    stroke_length: 0.2
+    stiffness: 5.0
+    damping: 1.0
+    tau: 0.0
