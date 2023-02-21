@@ -17,6 +17,8 @@ enum State{WAIT,
            STANDUP,
            WALK,
            STANDSTILL,
+           LIEDOWN,
+           LIESTILL,
            RESET};
 
 class CustomGait : public rclcpp::Node
@@ -67,6 +69,14 @@ public:
     switch_gait_ = create_service<std_srvs::srv::Empty>(
       "switch",
       std::bind(&CustomGait::switch_gait, this, std::placeholders::_1, std::placeholders::_2));
+    
+    lie_down_ = create_service<std_srvs::srv::Empty>(
+      "lie_down",
+      std::bind(&CustomGait::lie_down, this, std::placeholders::_1, std::placeholders::_2));
+
+    stand_up_ = create_service<std_srvs::srv::Empty>(
+      "stand_up",
+      std::bind(&CustomGait::stand_up, this, std::placeholders::_1, std::placeholders::_2));
 
     reset_torque_ = create_service<std_srvs::srv::Empty>(
       "reset_torque",
@@ -178,6 +188,10 @@ public:
     stand_calf = standing_joints.calf_lefty;
     stand_thigh = standing_joints.thigh_lefty;
 
+    const auto liedown_joints = gaitlib::ik(0.0, stand_offset);
+    liedown_calf = liedown_joints.calf_lefty;
+    liedown_thigh = liedown_joints.thigh_lefty;
+
     RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
 
@@ -196,6 +210,38 @@ private:
     } else if (state == STANDSTILL){
       state = WALK;
       motiontime = 0;
+    }
+  }
+
+  /// @brief Switch gait type between standing/walking
+  /// @param Request: The empty request
+  /// @param Response: The empty response
+  void lie_down(
+    std::shared_ptr<std_srvs::srv::Empty::Request>,
+    std::shared_ptr<std_srvs::srv::Empty::Response>)
+  {
+    RCLCPP_INFO_STREAM(get_logger(), "Lie Down");
+    if (state == STANDSTILL){
+      state = LIEDOWN;
+      motiontime = 0;
+    } else {
+      RCLCPP_INFO_STREAM(get_logger(), "You must be in the standstill state to lie down!");
+    }
+  }
+
+  /// @brief Switch gait type between standing/walking
+  /// @param Request: The empty request
+  /// @param Response: The empty response
+  void stand_up(
+    std::shared_ptr<std_srvs::srv::Empty::Request>,
+    std::shared_ptr<std_srvs::srv::Empty::Response>)
+  {
+    RCLCPP_INFO_STREAM(get_logger(), "Stand Up");
+    if (state == LIESTILL){
+      state = STANDUP;
+      motiontime = 0;
+    } else {
+      RCLCPP_INFO_STREAM(get_logger(), "You must be in the liestill state to lie down!");
     }
   }
 
@@ -238,76 +284,64 @@ private:
           state = STANDUP;
           // set params that will never change: dq, kp, kd (for PI control)
           low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_CALF].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FR_CALF].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FR_CALF].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FR_CALF].kd = damping;
           low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = damping;
           low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_HIP].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FR_HIP].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FR_HIP].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FR_HIP].kd = damping;
 
           low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_CALF].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FL_CALF].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FL_CALF].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FL_CALF].kd = damping;
           low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = damping;
           low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_HIP].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::FL_HIP].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::FL_HIP].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::FL_HIP].kd = damping;
 
           low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_CALF].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RR_CALF].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RR_CALF].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RR_CALF].kd = damping;
           low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = damping;
           low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_HIP].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RR_HIP].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RR_HIP].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RR_HIP].kd = damping;
 
           low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_CALF].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RL_CALF].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RL_CALF].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RL_CALF].kd = damping;
           low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = damping;
           low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_HIP].kp = 5.0;
-          low_cmd.motor_cmd[gaitlib::RL_HIP].kd = 1.0;
+          low_cmd.motor_cmd[gaitlib::RL_HIP].kp = stiffness;
+          low_cmd.motor_cmd[gaitlib::RL_HIP].kd = damping;
         }
         break;
       }
       case STANDUP:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FL_HIP].tau = stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RL_HIP].tau = stand_hip_torque;
 
         motiontime += 1;
         // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
@@ -321,53 +355,86 @@ private:
       case STANDSTILL:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = stand_calf;
-        low_cmd.motor_cmd[gaitlib::FR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = stand_thigh;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::FL_CALF].q = stand_calf;
-        low_cmd.motor_cmd[gaitlib::FL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = stand_thigh;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::FL_HIP].tau = stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RR_CALF].q = stand_calf;
-        low_cmd.motor_cmd[gaitlib::RR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = stand_thigh;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RL_CALF].q = stand_calf;
-        low_cmd.motor_cmd[gaitlib::RL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = stand_thigh;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
-        low_cmd.motor_cmd[gaitlib::RL_HIP].tau = stand_hip_torque;
+        break;
+      }
+      case LIEDOWN:
+      {
+        const auto npoints = static_cast<long>(fr_calf_stand.size());
+        // should iterate backwards through the _stand vectors.
+        // ie, x_stand.size() - motiontime for 0 < motiontime < x_stand.size()
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
+
+        motiontime += 1;
+        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
+        if (motiontime >= npoints) {
+          RCLCPP_INFO_STREAM(get_logger(), "Lie still!");
+          motiontime = 0;
+          state = LIESTILL;
+        }
+        break;
+      }
+      case LIESTILL:
+      {
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = liedown_calf;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = liedown_thigh;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = liedown_calf;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = liedown_thigh;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = liedown_calf;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = liedown_thigh;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = liedown_calf;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = liedown_thigh;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
         break;
       }
       case WALK:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FR_CALF].tau = 0.0; // TODO
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
         low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FL_CALF].tau = 0.0; // TODO
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
         low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RR_CALF].tau = 0.0; // TODO
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
         low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RL_CALF].tau = 0.0; // TODO
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
@@ -410,6 +477,8 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr lie_down_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stand_up_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_torque_;
   ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
   long motiontime = 0;
@@ -442,6 +511,8 @@ private:
   State state = WAIT;
   // y coordinate the foot is at WRT hip when standing still
   double stand_y, stand_calf, stand_thigh;
+  // y coordinate the foot is at WRT hip when standing still
+  double liedown_y, liedown_calf, liedown_thigh;
   double stroke_length, stiffness, damping, delta;
   double stand_calf_torque = 0.0;
   double stand_hip_torque = 0.0;
