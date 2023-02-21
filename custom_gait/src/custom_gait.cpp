@@ -27,7 +27,7 @@ public:
   {
     declare_parameter("rate", 200.0);
     double rate_hz = get_parameter("rate").as_double();
-    RCLCPP_INFO_STREAM(get_logger(), "Rate is " << ((int)(1000. / rate_hz)) << "ms");
+    RCLCPP_INFO_STREAM(get_logger(), "Publish rate is " << ((int)(1000. / rate_hz)) << "ms");
     std::chrono::milliseconds rate = (std::chrono::milliseconds) ((int)(1000. / rate_hz));
     
     declare_parameter("seconds_per_swing", 2.0);
@@ -48,6 +48,10 @@ public:
     declare_parameter("damping", 1.0); // kd
     damping = get_parameter("damping").as_double();
     RCLCPP_INFO_STREAM(get_logger(), damping<<" kd");
+
+    declare_parameter("delta", 0.05);
+    delta = get_parameter("delta").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), delta<<" delta");
 
     // declare_parameter("torque", 1.0); // tau
 
@@ -122,7 +126,7 @@ public:
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
     RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
     std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sinusoid);
-    std::vector<double> sin_y = gaitlib::stance(sin_x, 0.05, ctrl_y.at(0));
+    std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
     const auto final_x = gaitlib::concatenate(bez_x, sin_x);
     const auto final_y = gaitlib::concatenate(bez_y, sin_y);
@@ -438,7 +442,7 @@ private:
   State state = WAIT;
   // y coordinate the foot is at WRT hip when standing still
   double stand_y, stand_calf, stand_thigh;
-  double stroke_length, stiffness, damping;
+  double stroke_length, stiffness, damping, delta;
   double stand_calf_torque = 0.0;
   double stand_hip_torque = 0.0;
   double stand_thigh_torque = 0.0;

@@ -4,4 +4,4 @@
     stroke_length: 0.2
     stiffness: 10.0
     damping: 2.0
-    tau: 0.0
+    delta: 0.05
