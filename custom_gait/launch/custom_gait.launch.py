@@ -33,8 +33,8 @@ def generate_launch_description():
 
           Node(package='custom_gait',
                executable='custom_gait',
-               parameters=[[FindPackageShare('custom_gait'),
+               parameters=[FindPackageShare('custom_gait'),
                                              'config',
-                                             'set_gait.yaml']],
+                                             'set_gait.yaml'],
                output='screen')
     ])

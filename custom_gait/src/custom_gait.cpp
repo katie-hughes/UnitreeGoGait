@@ -43,9 +43,11 @@ public:
 
     declare_parameter("stiffness", 5.0); // kp
     stiffness = get_parameter("stiffness").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), stiffness<<" kp");
 
     declare_parameter("damping", 1.0); // kd
     damping = get_parameter("damping").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), damping<<" kd");
 
     // declare_parameter("torque", 1.0); // tau
 

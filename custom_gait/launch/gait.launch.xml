@@ -1,0 +1,15 @@
+<launch>
+
+  <include file="$(find-pkg-share go1_description)/launch/visualize.launch.py">
+    <arg name="use_jsp" value="none"/>
+    <arg name="publish_static_world_tf" value="true"/>
+    <arg name="fixed_frame" value="world"/>
+  </include>
+
+  <node pkg="unitree_legged_real" exec="udp_low"/>
+
+  <node pkg="custom_gait" exec="custom_gait">
+    <param from="$(find-pkg-share custom_gait)/config/set_gait.yaml"/>
+  </node>
+
+</launch>
