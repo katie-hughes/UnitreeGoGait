@@ -16,7 +16,8 @@ using namespace std::chrono_literals;
 enum State{WAIT,
            STANDUP,
            WALK,
-           STANDSTILL};
+           STANDSTILL,
+           RESET};
 
 class CustomGait : public rclcpp::Node
 {
@@ -60,6 +61,10 @@ public:
     switch_gait_ = create_service<std_srvs::srv::Empty>(
       "switch",
       std::bind(&CustomGait::switch_gait, this, std::placeholders::_1, std::placeholders::_2));
+
+    reset_torque_ = create_service<std_srvs::srv::Empty>(
+      "reset_torque",
+      std::bind(&CustomGait::reset_torque, this, std::placeholders::_1, std::placeholders::_2));
 
     timer_ = create_wall_timer(
       rate,
@@ -187,6 +192,17 @@ private:
       motiontime = 0;
     }
   }
+
+  /// @brief Put the dog into a torque 0 state
+  /// @param Request: The empty request
+  /// @param Response: The empty response
+  void reset_torque(
+    std::shared_ptr<std_srvs::srv::Empty::Request>,
+    std::shared_ptr<std_srvs::srv::Empty::Response>)
+  {
+    RCLCPP_INFO_STREAM(get_logger(), "Reset Torque");
+    state = RESET;
+  }
   void state_cb(const ros2_unitree_legged_msgs::msg::LowState & msg)
   {
     if (feets.size() == 0) {
@@ -262,24 +278,28 @@ private:
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(motiontime);
         low_cmd.motor_cmd[gaitlib::FL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FL_HIP].tau = stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(motiontime);
         low_cmd.motor_cmd[gaitlib::RL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RL_HIP].tau = stand_hip_torque;
 
@@ -297,24 +317,28 @@ private:
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = stand_calf;
         low_cmd.motor_cmd[gaitlib::FR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::FL_CALF].q = stand_calf;
         low_cmd.motor_cmd[gaitlib::FL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::FL_HIP].tau = stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RR_CALF].q = stand_calf;
         low_cmd.motor_cmd[gaitlib::RR_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RR_HIP].tau = -1.0*stand_hip_torque;
 
         low_cmd.motor_cmd[gaitlib::RL_CALF].q = stand_calf;
         low_cmd.motor_cmd[gaitlib::RL_CALF].tau = stand_calf_torque;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = stand_thigh;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = stand_thigh_torque;
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
         low_cmd.motor_cmd[gaitlib::RL_HIP].tau = stand_hip_torque;
         break;
@@ -349,6 +373,25 @@ private:
         }
         break;
       }
+      case RESET:
+      {
+        low_cmd.motor_cmd[gaitlib::FR_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].tau = 0.0;
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].tau = 0.0;
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].tau = 0.0;
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].tau = 0.0;
+        break;
+      }
       default:
       {
         RCLCPP_INFO_STREAM(get_logger(), "INVALID STATE!!!!");
@@ -361,6 +404,7 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_torque_;
   ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
   long motiontime = 0;
   int count = 0;
@@ -393,8 +437,9 @@ private:
   // y coordinate the foot is at WRT hip when standing still
   double stand_y, stand_calf, stand_thigh;
   double stroke_length, stiffness, damping;
-  double stand_calf_torque = 3.0;
-  double stand_hip_torque = 3.0;
+  double stand_calf_torque = 0.0;
+  double stand_hip_torque = 0.0;
+  double stand_thigh_torque = 0.0;
 };
 
 
