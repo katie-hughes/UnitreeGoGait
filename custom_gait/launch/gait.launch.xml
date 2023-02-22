@@ -1,10 +1,30 @@
 <launch>
 
   <include file="$(find-pkg-share unitree_legged_real)/launch/low.launch.py">
+    <arg name="js_source" value="state"/>
+    <arg name="use_rviz" value="false"/>
+  </include>
+
+  <include file="$(find-pkg-share unitree_legged_real)/launch/low.launch.py">
+    <arg name="js_source" value="cmd"/>
+    <arg name="use_rviz" value="false"/>
   </include>
 
   <node pkg="custom_gait" exec="custom_gait">
     <param from="$(find-pkg-share custom_gait)/config/set_gait.yaml"/>
   </node>
+
+  <!-- Create world frame to connect my tfs -->
+  <node pkg="tf2_ros"
+        exec="static_transform_publisher"
+        args="0 0 1 0 0 0 world cmd/base"/>
+
+  <node pkg="tf2_ros"
+        exec="static_transform_publisher"
+        args="0 0 1 0 0 0 world state/base"/>
+
+  <node pkg="rviz2" exec="rviz2"
+        args="-d $(find-pkg-share custom_gait)/config/gait.rviz"/>
+
 
 </launch>

@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
-    seconds_per_swing: 2.0
-    stroke_length: 0.2
+    seconds_per_swing: 1.0
+    stroke_length: 0.1
     stiffness: 30.0
     damping: 5.0
-    delta: 0.05
+    delta: 0.025
