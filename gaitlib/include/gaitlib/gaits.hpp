@@ -8,11 +8,14 @@
 
 namespace gaitlib{
 
-  // The following Joint IDs were taken from Unitree's quadruped.hpp
-  // these are used to index the appropriate joints in their low_cmd message.
-
   /// @brief Length of each leg segment (thigh->calf,calf->foot) in m.
   constexpr double LEG_LENGTH = 0.213;
+
+  /// @brief Number of joints in the unitree go1
+  constexpr double NJOINTS = 12;
+
+  // The following Joint IDs were taken from Unitree's quadruped.hpp
+  // these are used to index the appropriate joints in their low_cmd message.
 
   /// @brief Front Right Hip Joint
   constexpr int FR_HIP = 0;
@@ -41,6 +44,21 @@ namespace gaitlib{
   constexpr int RL_THIGH = 10;
   /// @brief Rear Left Calf Joint
   constexpr int RL_CALF = 11;
+
+  // Joint Limits
+  
+  /// @brief Lower bound of calf joint (radians)
+  constexpr double CALF_LO = -2.82;
+  /// @brief Upper bound of calf joint (radians)
+  constexpr double CALF_HI = -0.89;
+  /// @brief Lower bound of thigh joint (radians)
+  constexpr double THIGH_LO = -0.69;
+  /// @brief Upper bound of thigh joint (radians)
+  constexpr double THIGH_HI = 4.50;
+  /// @brief Lower bound of hip joint (radians)
+  constexpr double HIP_LO = -0.86;
+  /// @brief Upper bound of hip joint (radians)
+  constexpr double HIP_HI = 0.86;
 
   /// @brief Way of packaging the joint trajectories for both thigh and calf.
   struct MyGait {

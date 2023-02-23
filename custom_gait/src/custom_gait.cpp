@@ -90,7 +90,7 @@ public:
     init_low_cmd();
 
     // Create walking procedure
-    generate_gait();
+    generate_trot_gait();
 
     // Create standup procedure
     generate_standup();
@@ -118,18 +118,7 @@ private:
   std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
                       fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
   // This is the length of the legs.
-  double l = 0.213;
-  // Define joint limits
-  double calf_lo = -2.82;
-  double calf_hi = -0.89;
-  double thigh_lo = -0.69;
-  double thigh_hi = 4.50;
-  double hip_lo = -0.86;
-  double hip_hi = 0.86;
-  // Define nominal joint values
-  double calf_base = -1.85;
-  double thigh_base = 0.0;
-  double hip_base = 0.0;
+  // double l = 0.213;
   // Control points for bezier curve
   std::vector<double> ctrl_x, ctrl_y;
   State state = WAIT;
@@ -148,7 +137,7 @@ private:
     low_cmd.head[0] = 0xFE;
     low_cmd.head[1] = 0xEF;
     low_cmd.level_flag = 0xFF;   // LOWLEVEL;
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < gaitlib::NJOINTS; i++) {
       low_cmd.motor_cmd[i].mode = 0x0A;    // motor switch to servo (PMSM) mode
       low_cmd.motor_cmd[i].q = (2.146E+9f);   // PosStopF; // 禁止位置环
       low_cmd.motor_cmd[i].kp = 0;
@@ -159,7 +148,7 @@ private:
   }
 
   /// @brief Generate a bezier trotting gait
-  void generate_gait(){
+  void generate_trot_gait(){
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
@@ -342,46 +331,13 @@ private:
         if (count > delay) {
           RCLCPP_INFO_STREAM(get_logger(), "Stand Up!");
           state = STANDUP;
-          // set params that will never change: dq, kp, kd (for PI control)
-          low_cmd.motor_cmd[gaitlib::FR_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_CALF].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FR_CALF].kd = damping;
-          low_cmd.motor_cmd[gaitlib::FR_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_THIGH].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FR_THIGH].kd = damping;
-          low_cmd.motor_cmd[gaitlib::FR_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FR_HIP].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FR_HIP].kd = damping;
-
-          low_cmd.motor_cmd[gaitlib::FL_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_CALF].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FL_CALF].kd = damping;
-          low_cmd.motor_cmd[gaitlib::FL_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_THIGH].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FL_THIGH].kd = damping;
-          low_cmd.motor_cmd[gaitlib::FL_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::FL_HIP].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::FL_HIP].kd = damping;
-
-          low_cmd.motor_cmd[gaitlib::RR_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_CALF].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RR_CALF].kd = damping;
-          low_cmd.motor_cmd[gaitlib::RR_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_THIGH].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RR_THIGH].kd = damping;
-          low_cmd.motor_cmd[gaitlib::RR_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RR_HIP].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RR_HIP].kd = damping;
-
-          low_cmd.motor_cmd[gaitlib::RL_CALF].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_CALF].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RL_CALF].kd = damping;
-          low_cmd.motor_cmd[gaitlib::RL_THIGH].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_THIGH].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RL_THIGH].kd = damping;
-          low_cmd.motor_cmd[gaitlib::RL_HIP].dq = 0.0;
-          low_cmd.motor_cmd[gaitlib::RL_HIP].kp = stiffness;
-          low_cmd.motor_cmd[gaitlib::RL_HIP].kd = damping;
+          // set params that will never change and are the same for all joints: 
+          // dq, kp, kd (for PD control)
+          for (int i = 0; i < gaitlib::NJOINTS; i++){
+            low_cmd.motor_cmd[i].dq = 0.0;
+            low_cmd.motor_cmd[i].kp = stiffness;
+            low_cmd.motor_cmd[i].kd = damping;
+          }
         }
         break;
       }
