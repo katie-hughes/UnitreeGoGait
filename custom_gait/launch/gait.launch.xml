@@ -9,9 +9,4 @@
     <param from="$(find-pkg-share custom_gait)/config/set_gait.yaml"/>
   </node>
 
-  <!-- Load rviz with custom config file to visualize both models
-  <node pkg="rviz2" exec="rviz2"
-        args="-d $(find-pkg-share custom_gait)/config/gait.rviz"/> -->
-
-
 </launch>

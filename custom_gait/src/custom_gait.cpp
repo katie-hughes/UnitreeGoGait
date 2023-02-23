@@ -28,7 +28,7 @@ public:
   : Node("custom_gait")
   {
     declare_parameter("rate", 200.0);
-    double rate_hz = get_parameter("rate").as_double();
+    rate_hz = get_parameter("rate").as_double();
     RCLCPP_INFO_STREAM(get_logger(), "Publish rate is " << ((int)(1000. / rate_hz)) << "ms");
     std::chrono::milliseconds rate = (std::chrono::milliseconds) ((int)(1000. / rate_hz));
     
@@ -86,7 +86,65 @@ public:
       rate,
       std::bind(&CustomGait::timer_callback, this));
 
-    // initialize low_cmd fields
+    // Provide some initializations to the low_cmd message
+    init_low_cmd();
+
+    // Create walking procedure
+    generate_gait();
+
+    // Create standup procedure
+    generate_standup();
+
+    RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
+  }
+
+private:
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr lie_down_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stand_up_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_torque_;
+  ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
+  long motiontime = 0;
+  int count = 0;
+  rclcpp::Publisher<ros2_unitree_legged_msgs::msg::LowCmd>::SharedPtr cmd_pub_;
+  rclcpp::Subscription<ros2_unitree_legged_msgs::msg::LowState>::SharedPtr state_sub_;
+  std::vector<int> feets;
+  long period;
+  long delay;
+  // these hold the primary gait
+  std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh;
+  // these hold the standing gaits
+  std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
+                      fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
+  // This is the length of the legs.
+  double l = 0.213;
+  // Define joint limits
+  double calf_lo = -2.82;
+  double calf_hi = -0.89;
+  double thigh_lo = -0.69;
+  double thigh_hi = 4.50;
+  double hip_lo = -0.86;
+  double hip_hi = 0.86;
+  // Define nominal joint values
+  double calf_base = -1.85;
+  double thigh_base = 0.0;
+  double hip_base = 0.0;
+  // Control points for bezier curve
+  std::vector<double> ctrl_x, ctrl_y;
+  State state = WAIT;
+  // y coordinate the foot is at WRT hip when standing still
+  double stand_y, stand_calf, stand_thigh;
+  // y coordinate the foot is at WRT hip when standing still
+  double liedown_y, liedown_calf, liedown_thigh;
+  double stroke_length, stiffness, damping, delta;
+  double stand_calf_torque = 0.0;
+  double stand_hip_torque = 0.0;
+  double stand_thigh_torque = 0.0;
+  double rate_hz; 
+
+  /// @brief Initialize the low command message for when the dog first gets connected
+  void init_low_cmd(){
     low_cmd.head[0] = 0xFE;
     low_cmd.head[1] = 0xEF;
     low_cmd.level_flag = 0xFF;   // LOWLEVEL;
@@ -98,7 +156,10 @@ public:
       low_cmd.motor_cmd[i].kd = 0;
       low_cmd.motor_cmd[i].tau = 0;
     }
+  }
 
+  /// @brief Generate a bezier trotting gait
+  void generate_gait(){
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
@@ -153,7 +214,9 @@ public:
 
     rl_calf = gaitlib::modulate(fr_calf, 0.0);
     rl_thigh = gaitlib::modulate(fr_thigh, 0.0);
+  }
 
+  void generate_standup(){
     // create a standing up movement. Should be defined by # of seconds probably
     // the first thing the real robot does upon startup is angle its hips inwards.
     // it ends at y = some small negative #, x = 0. 
@@ -191,11 +254,8 @@ public:
     const auto liedown_joints = gaitlib::ik(0.0, stand_offset);
     liedown_calf = liedown_joints.calf_lefty;
     liedown_thigh = liedown_joints.thigh_lefty;
-
-    RCLCPP_INFO_STREAM(get_logger(), "Waiting...");
   }
 
-private:
   /// @brief Switch gait type between standing/walking
   /// @param Request: The empty request
   /// @param Response: The empty response
@@ -474,49 +534,6 @@ private:
     // RCLCPP_INFO_STREAM(get_logger(), "FR Torque: "<<low_cmd.motor_cmd[gaitlib::FR_HIP].tau);
     cmd_pub_->publish(low_cmd);
   }
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr lie_down_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stand_up_;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_torque_;
-  ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
-  long motiontime = 0;
-  int count = 0;
-  rclcpp::Publisher<ros2_unitree_legged_msgs::msg::LowCmd>::SharedPtr cmd_pub_;
-  rclcpp::Subscription<ros2_unitree_legged_msgs::msg::LowState>::SharedPtr state_sub_;
-  std::vector<int> feets;
-  long period;
-  long delay;
-  // these hold the primary gait
-  std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh;
-  // these hold the standing gaits
-  std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
-                      fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
-  // This is the length of the legs.
-  double l = 0.213;
-  // Define joint limits
-  double calf_lo = -2.82;
-  double calf_hi = -0.89;
-  double thigh_lo = -0.69;
-  double thigh_hi = 4.50;
-  double hip_lo = -0.86;
-  double hip_hi = 0.86;
-  // Define nominal joint values
-  double calf_base = -1.85;
-  double thigh_base = 0.0;
-  double hip_base = 0.0;
-  // Control points for bezier curve
-  std::vector<double> ctrl_x, ctrl_y;
-  State state = WAIT;
-  // y coordinate the foot is at WRT hip when standing still
-  double stand_y, stand_calf, stand_thigh;
-  // y coordinate the foot is at WRT hip when standing still
-  double liedown_y, liedown_calf, liedown_thigh;
-  double stroke_length, stiffness, damping, delta;
-  double stand_calf_torque = 0.0;
-  double stand_hip_torque = 0.0;
-  double stand_thigh_torque = 0.0;
 };
 
 
