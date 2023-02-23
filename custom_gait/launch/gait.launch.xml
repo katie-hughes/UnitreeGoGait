@@ -2,7 +2,6 @@
 
   <!-- Set up a robot model to display the current state -->
   <include file="$(find-pkg-share unitree_legged_real)/launch/low.launch.py">
-    <arg name="use_rviz" value="false"/>
   </include>
 
   <!-- Send my custom low level commands -->
@@ -10,18 +9,9 @@
     <param from="$(find-pkg-share custom_gait)/config/set_gait.yaml"/>
   </node>
 
-  <!-- Create world frame to connect my tfs -->
-  <node pkg="tf2_ros"
-        exec="static_transform_publisher"
-        args="0 0 1 0 0 0 world cmd/base"/>
-
-  <node pkg="tf2_ros"
-        exec="static_transform_publisher"
-        args="0 0 1 0 0 0 world state/base"/>
-
-  <!-- Load rviz with custom config file to visualize both models -->
+  <!-- Load rviz with custom config file to visualize both models
   <node pkg="rviz2" exec="rviz2"
-        args="-d $(find-pkg-share custom_gait)/config/gait.rviz"/>
+        args="-d $(find-pkg-share custom_gait)/config/gait.rviz"/> -->
 
 
 </launch>
