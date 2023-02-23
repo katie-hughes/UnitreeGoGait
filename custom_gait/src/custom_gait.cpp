@@ -58,7 +58,7 @@ public:
     // declare_parameter("torque", 1.0); // tau
 
     // delay for 3 seconds before beginning movement
-    delay = rate_hz * 3.0;
+    initial_delay = rate_hz * 3.0;
 
     cmd_pub_ = create_publisher<ros2_unitree_legged_msgs::msg::LowCmd>("low_cmd", 10);
 
@@ -90,7 +90,8 @@ public:
     init_low_cmd();
 
     // Create walking procedure
-    generate_trot_gait();
+    // generate_trot_gait();
+    generate_tripod_gait();
 
     // Create standup procedure
     generate_standup();
@@ -99,38 +100,39 @@ public:
   }
 
 private:
+
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr switch_gait_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr lie_down_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stand_up_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_torque_;
-  ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
-  long motiontime = 0;
-  int count = 0;
   rclcpp::Publisher<ros2_unitree_legged_msgs::msg::LowCmd>::SharedPtr cmd_pub_;
   rclcpp::Subscription<ros2_unitree_legged_msgs::msg::LowState>::SharedPtr state_sub_;
+
+  // Use one LowCmd object to repeatedly publish
+  ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
+  // Timestep, to be used in my timer to select appropriate joint angle
+  long timestep = 0;
+  // Store current feet sensor information (currently unused beyond this)
   std::vector<int> feets;
+  // Period of one swing
   long period;
-  long delay;
+  // Delay for a bit before beginning the gait
+  long initial_delay;
   // these hold the primary gait
-  std::vector<double> fr_calf, fl_calf, rr_calf, rl_calf, fr_thigh, fl_thigh, rr_thigh, rl_thigh;
+  std::vector<double> fr_calf_walk, fl_calf_walk, rr_calf_walk, rl_calf_walk, 
+                      fr_thigh_walk, fl_thigh_walk, rr_thigh_walk, rl_thigh_walk;
   // these hold the standing gaits
   std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
                       fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
-  // This is the length of the legs.
-  // double l = 0.213;
-  // Control points for bezier curve
-  std::vector<double> ctrl_x, ctrl_y;
+  // Current state
   State state = WAIT;
   // y coordinate the foot is at WRT hip when standing still
   double stand_y, stand_calf, stand_thigh;
   // y coordinate the foot is at WRT hip when standing still
   double liedown_y, liedown_calf, liedown_thigh;
-  double stroke_length, stiffness, damping, delta;
-  double stand_calf_torque = 0.0;
-  double stand_hip_torque = 0.0;
-  double stand_thigh_torque = 0.0;
-  double rate_hz; 
+  // for reading in parameters
+  double rate_hz, stroke_length, stiffness, damping, delta;
 
   /// @brief Initialize the low command message for when the dog first gets connected
   void init_low_cmd(){
@@ -155,7 +157,7 @@ private:
     stand_y = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
     const auto swing_height = 0.05;   // ???
     const auto dswing_height = 0.025;   // ??
-    ctrl_x = {-1.0 * lspan,
+    std::vector<double> ctrl_x{-1.0 * lspan,
       -1.0 * lspan - dl,
       -1.0 * lspan - dl - ddl,
       -1.0 * lspan - dl - ddl,
@@ -167,7 +169,7 @@ private:
       lspan + dl + ddl,
       lspan + dl,
       lspan};
-    ctrl_y = {stand_y,
+    std::vector<double> ctrl_y{stand_y,
       stand_y,
       stand_y + swing_height,
       stand_y + swing_height,
@@ -192,18 +194,79 @@ private:
     const auto final_y = gaitlib::concatenate(bez_y, sin_y);
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
-    fr_calf = fr_gaits.gait_calf;
-    fr_thigh = fr_gaits.gait_thigh;
+    fr_calf_walk = fr_gaits.gait_calf;
+    fr_thigh_walk = fr_gaits.gait_thigh;
     // Next: MODULATE based on fr
-    fl_calf = gaitlib::modulate(fr_calf, 0.5);
-    fl_thigh = gaitlib::modulate(fr_thigh, 0.5);
+    fl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.5);
+    fl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.5);
 
-    rr_calf = gaitlib::modulate(fr_calf, 0.5);
-    rr_thigh = gaitlib::modulate(fr_thigh, 0.5);
+    rr_calf_walk = gaitlib::modulate(fr_calf_walk, 0.5);
+    rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.5);
 
-    rl_calf = gaitlib::modulate(fr_calf, 0.0);
-    rl_thigh = gaitlib::modulate(fr_thigh, 0.0);
+    rl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.0);
+    rl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.0);
   }
+
+  /// @brief Generate a bezier tripod gait that moves exactly one foot at a time
+  void generate_tripod_gait(){
+    const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
+    const auto dl = 0.025;   // extra bit to extend by after leaving floor
+    const auto ddl = 0.025;   // another extra bit to extend by LOL
+    stand_y = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
+    const auto swing_height = 0.05;   // ???
+    const auto dswing_height = 0.025;   // ??
+    std::vector<double> ctrl_x{-1.0 * lspan,
+      -1.0 * lspan - dl,
+      -1.0 * lspan - dl - ddl,
+      -1.0 * lspan - dl - ddl,
+      -1.0 * lspan - dl - ddl,
+      0.0,
+      0.0,
+      0.0,
+      lspan + dl + ddl,
+      lspan + dl + ddl,
+      lspan + dl,
+      lspan};
+    std::vector<double> ctrl_y{stand_y,
+      stand_y,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y + swing_height + dswing_height,
+      stand_y,
+      stand_y};
+
+    long npoints_bezier = period;
+    // this 3 is to give the 3 remaining legs time to complete the swing
+    long npoints_rest = 3*npoints_bezier;
+    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
+    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
+    RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
+    std::vector<double> rest_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_rest);
+    std::vector<double> rest_y = gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
+
+    const auto final_x = gaitlib::concatenate(bez_x, rest_x);
+    const auto final_y = gaitlib::concatenate(bez_y, rest_y);
+
+    const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
+    fr_calf_walk = fr_gaits.gait_calf;
+    fr_thigh_walk = fr_gaits.gait_thigh;
+    // Next: MODULATE based on fr
+    // I want FR, RL, FL, RR for simple walk
+    rl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.25);
+    rl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.25);
+
+    fl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.5);
+    fl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.5);
+
+    rr_calf_walk = gaitlib::modulate(fr_calf_walk, 0.75);
+    rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.75);
+  }
+
 
   void generate_standup(){
     // create a standing up movement. Should be defined by # of seconds probably
@@ -255,10 +318,10 @@ private:
     RCLCPP_INFO_STREAM(get_logger(), "Switch Gait");
     if (state == WALK){
       state = STANDSTILL;
-      motiontime = 0;
+      timestep = 0;
     } else if (state == STANDSTILL){
       state = WALK;
-      motiontime = 0;
+      timestep = 0;
     }
   }
 
@@ -272,7 +335,7 @@ private:
     RCLCPP_INFO_STREAM(get_logger(), "Lie Down");
     if (state == STANDSTILL){
       state = LIEDOWN;
-      motiontime = 0;
+      timestep = 0;
     } else {
       RCLCPP_INFO_STREAM(get_logger(), "You must be in the standstill state to lie down!");
     }
@@ -288,7 +351,7 @@ private:
     RCLCPP_INFO_STREAM(get_logger(), "Stand Up");
     if (state == LIESTILL){
       state = STANDUP;
-      motiontime = 0;
+      timestep = 0;
     } else {
       RCLCPP_INFO_STREAM(get_logger(), "You must be in the liestill state to lie down!");
     }
@@ -327,8 +390,7 @@ private:
     switch(state){
       case WAIT:
       {
-        count ++;
-        if (count > delay) {
+        if (timestep > initial_delay) {
           RCLCPP_INFO_STREAM(get_logger(), "Stand Up!");
           state = STANDUP;
           // set params that will never change and are the same for all joints: 
@@ -338,32 +400,34 @@ private:
             low_cmd.motor_cmd[i].kp = stiffness;
             low_cmd.motor_cmd[i].kd = damping;
           }
+          timestep = 0;
         }
+        timestep++;
         break;
       }
       case STANDUP:
       {
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
-        motiontime += 1;
-        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
-        if (motiontime >= static_cast<long>(fr_calf_stand.size())) {
+        timestep++;
+        // RCLCPP_INFO_STREAM(get_logger(), "timestep " << timestep);
+        if (timestep >= static_cast<long>(fr_calf_stand.size())) {
           RCLCPP_INFO_STREAM(get_logger(), "Standstill!");
-          motiontime = 0;
+          timestep = 0;
           state = STANDSTILL;
         }
         break;
@@ -391,28 +455,28 @@ private:
       {
         const auto npoints = static_cast<long>(fr_calf_stand.size());
         // should iterate backwards through the _stand vectors.
-        // ie, x_stand.size() - motiontime for 0 < motiontime < x_stand.size()
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(npoints - motiontime - 1);
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(npoints - motiontime - 1);
+        // ie, x_stand.size() - timestep for 0 < timestep < x_stand.size()
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(npoints - timestep - 1);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(npoints - timestep - 1);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(npoints - motiontime - 1);
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_stand.at(npoints - timestep - 1);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_stand.at(npoints - timestep - 1);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(npoints - motiontime - 1);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_stand.at(npoints - timestep - 1);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_stand.at(npoints - timestep - 1);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(npoints - motiontime - 1);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(npoints - motiontime - 1);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_stand.at(npoints - timestep - 1);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_stand.at(npoints - timestep - 1);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
-        motiontime += 1;
-        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
-        if (motiontime >= npoints) {
+        timestep++;
+        // RCLCPP_INFO_STREAM(get_logger(), "timestep " << timestep);
+        if (timestep >= npoints) {
           RCLCPP_INFO_STREAM(get_logger(), "Lie still!");
-          motiontime = 0;
+          timestep = 0;
           state = LIESTILL;
         }
         break;
@@ -438,27 +502,27 @@ private:
       }
       case WALK:
       {
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf.at(motiontime);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh.at(motiontime);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
-        motiontime += 1;
-        // RCLCPP_INFO_STREAM(get_logger(), "Motiontime " << motiontime);
-        if (motiontime >= static_cast<long>(fr_calf.size())) {
+        timestep++;
+        // RCLCPP_INFO_STREAM(get_logger(), "timestep " << timestep);
+        if (timestep >= static_cast<long>(fr_calf_walk.size())) {
           RCLCPP_INFO_STREAM(get_logger(), "New Step!");
-          motiontime = 0;
+          timestep = 0;
         }
         break;
       }
