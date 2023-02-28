@@ -93,6 +93,12 @@ IKResult ik(double x, double y)
     return res;
   }
 
+Coords fk(double theta_thigh, double theta_calf){
+  const double fx = -LEG_LENGTH*(sin(theta_thigh) + sin(theta_calf + theta_thigh));
+  const double fy = -LEG_LENGTH*(cos(theta_thigh) + cos(theta_calf + theta_thigh));
+  return Coords{fx, fy};
+}
+
 MyGait make_gait(std::vector<double> desired_x, std::vector<double> desired_y)
   {
     std::vector<double> gait_calf;

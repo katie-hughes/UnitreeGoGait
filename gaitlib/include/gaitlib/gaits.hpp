@@ -81,6 +81,14 @@ namespace gaitlib{
     double calf_righty;
   };
 
+  /// @brief Holds Euclidean coordinates WRT the hip joint
+  struct Coords {
+    /// @brief X coordinate relative to hip (m)
+    double x;
+    /// @brief Y coordinate relative to hip (m)
+    double y;
+  };
+
   /// @brief 
   /// @param n 
   /// @return 
@@ -146,6 +154,12 @@ namespace gaitlib{
   /// @param y desired y coordinate WRT hip as origin (m)
   /// @return the set of two solutions (righty and lefty) for joint angles thigh and calf.
   IKResult ik(double x, double y);
+
+  /// @brief Compute the real world coordinates from the leg joint angles
+  /// @param theta_thigh thigh angle in radians
+  /// @param theta_calf calf angle in radians
+  /// @return x,y coordinates of foot with respect to hip joint.
+  Coords fk(double theta_thigh, double theta_calf);
 
   /// @brief Create joint trajectories for calf and thigh for desired foot trajectory
   /// @param desired_x desired x trajectory of foot

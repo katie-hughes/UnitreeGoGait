@@ -3,7 +3,7 @@
     seconds_per_swing: 1.0
     stroke_length: 0.2
     standup_time: 1.5
-    stiffness: 80.0
+    stiffness: 85.0
     damping: 2.0
     delta: 0.025
     stand_percentage: 0.75

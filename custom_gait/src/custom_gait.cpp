@@ -19,6 +19,8 @@ enum State{WAIT,
            STANDSTILL,
            LIEDOWN,
            LIESTILL,
+           WALK_TO_STANDSTILL,
+           STANDSTILL_TO_WALK,
            RESET};
 
 class CustomGait : public rclcpp::Node
@@ -140,6 +142,9 @@ private:
   // these hold the standing gaits
   std::vector<double> fr_calf_stand, fl_calf_stand, rr_calf_stand, rl_calf_stand, 
                       fr_thigh_stand, fl_thigh_stand, rr_thigh_stand, rl_thigh_stand;
+  // these hold the transitional gaits
+  std::vector<double> fr_calf_switch, fl_calf_switch, rr_calf_switch, rl_calf_switch, 
+                      fr_thigh_switch, fl_thigh_switch, rr_thigh_switch, rl_thigh_switch;
   // Current state
   State state = WAIT;
   // y coordinate the foot is at WRT hip when standing still
@@ -162,6 +167,50 @@ private:
       low_cmd.motor_cmd[i].kd = 0;
       low_cmd.motor_cmd[i].tau = 0;
     }
+  }
+
+  /// @brief Generate "switch" controls between standing and walking
+  void generate_transition(){
+    // At this point the standing and walking gaits have been calculated already
+    const auto foot_current = gaitlib::fk(stand_thigh, stand_calf);
+    const auto fr_desired = gaitlib::fk(fr_thigh_walk.at(0), fr_calf_walk.at(0));
+    const auto fl_desired = gaitlib::fk(fl_thigh_walk.at(0), fl_calf_walk.at(0));
+    const auto rr_desired = gaitlib::fk(rl_thigh_walk.at(0), rl_calf_walk.at(0));
+    const auto rl_desired = gaitlib::fk(rr_thigh_walk.at(0), rr_calf_walk.at(0));
+    // want to go from foot_current to fr_desired coordinates in a smooth and continuous way.
+    // I know that both of these are the same y level. Just different x.
+    RCLCPP_INFO_STREAM(get_logger(), "Current Stand: "<< foot_current.x << " " << foot_current.y);
+    RCLCPP_INFO_STREAM(get_logger(), "FR Desired: "<< fr_desired.x << " " << fr_desired.y);
+    RCLCPP_INFO_STREAM(get_logger(), "FL Desired: "<< fl_desired.x << " " << fl_desired.y);
+    RCLCPP_INFO_STREAM(get_logger(), "RR Desired: "<< rr_desired.x << " " << rr_desired.y);
+    RCLCPP_INFO_STREAM(get_logger(), "RL Desired: "<< rl_desired.x << " " << rl_desired.y);
+
+    // Generate switch gaits
+    const auto switch_npoints = period;
+
+    const auto fr_switch_x = gaitlib::linspace(foot_current.x, fr_desired.x, switch_npoints);
+    const auto fr_switch_y = gaitlib::linspace(foot_current.y, fr_desired.y, switch_npoints);
+    const auto fr_switch = gaitlib::make_gait(fr_switch_x, fr_switch_y);
+    fr_calf_switch =  fr_switch.gait_calf;
+    fr_thigh_switch = fr_switch.gait_thigh;
+
+    const auto fl_switch_x = gaitlib::linspace(foot_current.x, fl_desired.x, switch_npoints);
+    const auto fl_switch_y = gaitlib::linspace(foot_current.y, fl_desired.y, switch_npoints);
+    const auto fl_switch = gaitlib::make_gait(fl_switch_x, fl_switch_y);
+    fl_calf_switch =  fl_switch.gait_calf;
+    fl_thigh_switch = fl_switch.gait_thigh;
+
+    const auto rr_switch_x = gaitlib::linspace(foot_current.x, rr_desired.x, switch_npoints);
+    const auto rr_switch_y = gaitlib::linspace(foot_current.y, rr_desired.y, switch_npoints);
+    const auto rr_switch = gaitlib::make_gait(rr_switch_x, rr_switch_y);
+    rr_calf_switch =  rr_switch.gait_calf;
+    rr_thigh_switch = rr_switch.gait_thigh;
+
+    const auto rl_switch_x = gaitlib::linspace(foot_current.x, rl_desired.x, switch_npoints);
+    const auto rl_switch_y = gaitlib::linspace(foot_current.y, rl_desired.y, switch_npoints);
+    const auto rl_switch = gaitlib::make_gait(rl_switch_x, rl_switch_y);
+    rl_calf_switch =  rl_switch.gait_calf;
+    rl_thigh_switch = rl_switch.gait_thigh;
   }
 
   /// @brief Generate a bezier trotting gait
@@ -254,7 +303,7 @@ private:
       stand_y};
 
     long npoints_bezier = period;
-    // this 3 is to give the 3 remaining legs time to complete the swing
+    // this factor is to give the 3 remaining legs time to complete the swing
     long npoints_rest = 7*npoints_bezier;
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
@@ -271,13 +320,13 @@ private:
     fr_thigh_walk = fr_gaits.gait_thigh;
     // Next: MODULATE based on fr
     // I want FR, RL, FL, RR for simple walk
-    rl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.25);
+    rl_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.25);
     rl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.25);
 
-    fl_calf_walk = gaitlib::modulate(fr_calf_walk, 0.5);
+    fl_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.5);
     fl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.5);
 
-    rr_calf_walk = gaitlib::modulate(fr_calf_walk, 0.75);
+    rr_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.75);
     rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.75);
   }
 
@@ -361,13 +410,17 @@ private:
     std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
-    RCLCPP_INFO_STREAM(get_logger(), "Switch Gait");
     if (state == WALK){
+      RCLCPP_INFO_STREAM(get_logger(), "Switch to Standstill");
       state = STANDSTILL;
       timestep = 0;
     } else if (state == STANDSTILL){
-      state = WALK;
+      RCLCPP_INFO_STREAM(get_logger(), "Switch to Walk");
+      generate_transition();
+      state = STANDSTILL_TO_WALK;
       timestep = 0;
+    } else {
+      RCLCPP_INFO_STREAM(get_logger(), "You must be in either Standstill or Walk gait!");
     }
   }
 
@@ -535,21 +588,49 @@ private:
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
         break;
       }
+      case STANDSTILL_TO_WALK:
+      {
+        // transition from standing to walking
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q =  fr_calf_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FR_HIP].q =   0.0; 
+
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q =  fl_calf_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FL_HIP].q =   0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rr_calf_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_HIP].q =   0.0; 
+
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rl_calf_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_switch.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_HIP].q =   0.0; 
+
+        timestep++;
+        // RCLCPP_INFO_STREAM(get_logger(), "timestep " << timestep);
+        if (timestep >= static_cast<long>(fr_calf_switch.size())) {
+          RCLCPP_INFO_STREAM(get_logger(), "Start Walking!");
+          timestep = 0;
+          state = WALK;
+        }
+        break;
+      }
       case WALK:
       {
-        low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FR_CALF].q =  fr_calf_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].q = fl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::FL_CALF].q =  fl_calf_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q = rr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rr_calf_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q = rl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rl_calf_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
@@ -563,21 +644,21 @@ private:
       }
       case RESET:
       {
-        low_cmd.motor_cmd[gaitlib::FR_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_CALF].tau =  0.0;
         low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FR_HIP].tau =   0.0;
 
-        low_cmd.motor_cmd[gaitlib::FL_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_CALF].tau =  0.0;
         low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::FL_HIP].tau =   0.0;
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].tau =  0.0;
         low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RR_HIP].tau =   0.0;
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_CALF].tau =  0.0;
         low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].tau = 0.0;
+        low_cmd.motor_cmd[gaitlib::RL_HIP].tau =   0.0;
         break;
       }
       default:
