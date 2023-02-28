@@ -8,11 +8,14 @@ dqs = []
 ddqs = []
 tau_ests = []
 
+low_qs = []
+
 for i in range(0, 21):
   qs.append([])
   dqs.append([])
   ddqs.append([])
   tau_ests.append([])
+  low_qs.append([])
 
 with open('high_stand_sit.txt') as f:
   r = f.read()
@@ -34,6 +37,25 @@ with open('high_stand_sit.txt') as f:
         dqs[i].append(float(values[3]))
         ddqs[i].append(float(values[5]))
         tau_ests[i].append(float(values[7]))
+
+with open('custom_stand_sit.txt') as f:
+  r = f.read()
+  spl = r.split('---')
+  print("# of messages", len(spl))
+  for msg in spl:
+    chop = msg[msg.find('motor_cmd'):msg.find('bms')]
+    chop = chop[chop.find('- mode'):]
+    # print(chop)
+    modes = chop.split('- mode')
+    print(len(modes))
+    print("MODE\n\n")
+    for i,m in enumerate(modes):
+      m = m[m.find('q:'):m.find('kp')]
+      values = m.split()
+      print(i, values)
+      if (len(values) == 6):
+        low_qs[i].append(float(values[1]))
+
 
 
 def convert_name(num):
@@ -83,18 +105,19 @@ def plotarray(arr, name, lab=None):
   plt.show()
 
 
-plotarray(qs, "Q", lab="CALF")
-plotarray(qs, "Q", lab="HIP")
-plotarray(qs, "Q", lab="THIGH")
+def plotall(arr, title):
+  plotarray(arr, title, lab="CALF")
+  plotarray(arr, title, lab="HIP")
+  plotarray(arr, title, lab="THIGH")
 
-plotarray(dqs, "DQ", lab="CALF")
-plotarray(dqs, "DQ", lab="HIP")
-plotarray(dqs, "DQ", lab="THIGH")
 
-plotarray(ddqs, "DDQ", lab="CALF")
-plotarray(ddqs, "DDQ", lab="HIP")
-plotarray(ddqs, "DDQ", lab="THIGH")
+plotall(qs, "Q_HIGH")
+plotall(low_qs, "Q_LOW")
 
-plotarray(tau_ests, "Tau", lab="CALF")
-plotarray(tau_ests, "Tau", lab="HIP")
-plotarray(tau_ests, "Tau", lab="THIGH")
+plotall(dqs, "DQ_HIGH")
+plotall(ddqs, "DDQ_HIGH")
+plotall(tau_ests, "TAU_EST_HIGH")
+
+# plotarray(tau_ests, "Tau", lab="CALF")
+# plotarray(tau_ests, "Tau", lab="HIP")
+# plotarray(tau_ests, "Tau", lab="THIGH")

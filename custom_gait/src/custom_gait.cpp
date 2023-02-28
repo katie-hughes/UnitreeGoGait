@@ -43,6 +43,10 @@ public:
     stroke_length = get_parameter("stroke_length").as_double();
     RCLCPP_INFO_STREAM(get_logger(), stroke_length<<"m stroke length");
 
+    declare_parameter("standup_time", 2.0);
+    standup_time = get_parameter("standup_time").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), standup_time<<"s standup_time");
+
     declare_parameter("stiffness", 5.0); // kp
     stiffness = get_parameter("stiffness").as_double();
     RCLCPP_INFO_STREAM(get_logger(), stiffness<<" kp");
@@ -54,6 +58,14 @@ public:
     declare_parameter("delta", 0.05);
     delta = get_parameter("delta").as_double();
     RCLCPP_INFO_STREAM(get_logger(), delta<<" delta");
+
+    declare_parameter("stand_percentage", 0.75);
+    stand_percentage = get_parameter("stand_percentage").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), stand_percentage<<"percent stand height");
+
+    if ((stand_percentage < 0.05) || (stand_percentage > 0.95)){
+      throw std::logic_error("Stand percentage must be between 0 and 1!");
+    }
 
     // declare_parameter("torque", 1.0); // tau
 
@@ -89,9 +101,12 @@ public:
     // Provide some initializations to the low_cmd message
     init_low_cmd();
 
+    stand_y = -2.0 * stand_percentage * gaitlib::LEG_LENGTH;
+
     // Create walking procedure
     // generate_trot_gait();
     generate_tripod_gait();
+    // generate_stupid_gait();
 
     // Create standup procedure
     generate_standup();
@@ -113,8 +128,8 @@ private:
   ros2_unitree_legged_msgs::msg::LowCmd low_cmd;
   // Timestep, to be used in my timer to select appropriate joint angle
   long timestep = 0;
-  // Store current feet sensor information (currently unused beyond this)
-  std::vector<int> feets;
+  // Store current state of robot
+  ros2_unitree_legged_msgs::msg::LowState low_state;
   // Period of one swing
   long period;
   // Delay for a bit before beginning the gait
@@ -132,7 +147,7 @@ private:
   // y coordinate the foot is at WRT hip when standing still
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
-  double rate_hz, stroke_length, stiffness, damping, delta;
+  double rate_hz, stroke_length, standup_time, stiffness, damping, delta, stand_percentage;
 
   /// @brief Initialize the low command message for when the dog first gets connected
   void init_low_cmd(){
@@ -154,7 +169,6 @@ private:
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    stand_y = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
     const auto swing_height = 0.05;   // ???
     const auto dswing_height = 0.025;   // ??
     std::vector<double> ctrl_x{-1.0 * lspan,
@@ -212,7 +226,6 @@ private:
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    stand_y = -1.5 * gaitlib::LEG_LENGTH; // y distance when the foot is on the floor.
     const auto swing_height = 0.05;   // ???
     const auto dswing_height = 0.025;   // ??
     std::vector<double> ctrl_x{-1.0 * lspan,
@@ -242,12 +255,13 @@ private:
 
     long npoints_bezier = period;
     // this 3 is to give the 3 remaining legs time to complete the swing
-    long npoints_rest = 3*npoints_bezier;
+    long npoints_rest = 7*npoints_bezier;
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
     RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
     std::vector<double> rest_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_rest);
     std::vector<double> rest_y = gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
+    // std::vector<double> rest_y = gaitlib::stance(rest_x, delta, ctrl_y.at(0));
 
     const auto final_x = gaitlib::concatenate(bez_x, rest_x);
     const auto final_y = gaitlib::concatenate(bez_y, rest_y);
@@ -267,6 +281,36 @@ private:
     rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.75);
   }
 
+  /// @brief Generate a stupid gait that only moves FR leg with the rest standing.
+  void generate_stupid_gait(){
+    // Move from (0, stand_y) to (0 stand_y + 0.5*stroke_length) back to (0, stand_y)
+
+    long stupid_npoints = period;
+    std::vector<double> x_1 = gaitlib::linspace(0, 0, stupid_npoints);
+    std::vector<double> y_1 = gaitlib::linspace(stand_y, stand_y+0.5*stroke_length, stupid_npoints);
+
+    std::vector<double> x_2 = gaitlib::linspace(0, 0, stupid_npoints);
+    std::vector<double> y_2 = gaitlib::linspace(stand_y+0.5*stroke_length, stand_y, stupid_npoints);
+
+    const auto final_x = gaitlib::concatenate(x_1, x_2);
+    const auto final_y = gaitlib::concatenate(y_1, y_2);
+
+    const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
+    fr_calf_walk = fr_gaits.gait_calf;
+    fr_thigh_walk = fr_gaits.gait_thigh;
+
+    // rest of legs should just be stationary
+    std::vector<double> rest_x = gaitlib::linspace(0, 0, 2*stupid_npoints);
+    std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, 2*stupid_npoints);
+    const auto rest_gaits = gaitlib::make_gait(rest_x, rest_y);
+    fl_calf_walk = rest_gaits.gait_calf;
+    fl_thigh_walk = rest_gaits.gait_thigh;
+    rl_calf_walk = rest_gaits.gait_calf;
+    rl_thigh_walk = rest_gaits.gait_thigh;
+    rr_calf_walk = rest_gaits.gait_calf;
+    rr_thigh_walk = rest_gaits.gait_thigh;
+  }
+
 
   void generate_standup(){
     // create a standing up movement. Should be defined by # of seconds probably
@@ -276,11 +320,13 @@ private:
     // unsure if this should be in straight line
     double stand_offset = -0.1;
 
-    long standup_pts1 = rate_hz * 2; 
+    // This is a part of the standup where the legs are stationary under the hip
+    long standup_pts1 = rate_hz * 1; 
     const auto stand_up_x1 = gaitlib::linspace(0.0, 0.0, standup_pts1);
     const auto stand_up_y1 = gaitlib::linspace(stand_offset, stand_offset, standup_pts1);
 
-    long standup_pts2 = rate_hz * 3;
+    // This actually stands the robot up
+    long standup_pts2 = rate_hz * standup_time;
     const auto stand_up_x2 = gaitlib::linspace(0.0, 0.0, standup_pts2);
     const auto stand_up_y2 = gaitlib::linspace(stand_offset, stand_y, standup_pts2);
 
@@ -369,24 +415,11 @@ private:
   }
   void state_cb(const ros2_unitree_legged_msgs::msg::LowState & msg)
   {
-    if (feets.size() == 0) {
-      // first iteration
-      // This is a really dumb way of doing it but only way I could get to build ;-;
-      feets.push_back(msg.foot_force[0]);   // FR
-      feets.push_back(msg.foot_force[1]);   // FL
-      feets.push_back(msg.foot_force[2]);   // RR
-      feets.push_back(msg.foot_force[3]);   // RL
-    } else {
-      feets[0] = msg.foot_force[0];
-      feets[1] = msg.foot_force[1];
-      feets[2] = msg.foot_force[2];
-      feets[3] = msg.foot_force[3];
-    }
-    // RCLCPP_INFO_STREAM(get_logger(), "Foot Force:  FR:" << feets[0] << "  FL:" << feets[1] <<
-    //  "  RR:" << feets[2] << "  RL:" << feets[3]);
+    low_state = msg;
   }
   void timer_callback()
   {
+    // access state with low_state.motor_state.at(JOINT_ID).q
     switch(state){
       case WAIT:
       {
@@ -408,6 +441,8 @@ private:
       case STANDUP:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(timestep);
+        RCLCPP_INFO_STREAM(get_logger(), "error_q:"<<fr_calf_stand.at(timestep) -
+                                                     low_state.motor_state.at(gaitlib::FR_CALF).q);
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
