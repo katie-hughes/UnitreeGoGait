@@ -65,31 +65,36 @@ def convert_name(num):
       case _:
         return ""
 
+def plotarray(arr, name, lab=None):
+  for n,i in enumerate(arr):
+    if (1<=n<=12):
+      mylabel = convert_name(n)
+      if lab is not None:
+        if lab in mylabel:
+          plt.plot(i, label=mylabel)
+      else:
+        plt.plot(i, label=mylabel)
+  plottitle = name
+  if lab is not None:
+    plottitle += '_'+lab
+  plt.title(plottitle)
+  plt.legend()
+  plt.savefig('plots/'+plottitle+'.png')
+  plt.show()
 
-for n,i in enumerate(qs):
-  if (1<=n<=12):
-    plt.plot(i, label=convert_name(n))
-plt.title("Q")
-plt.legend()
-plt.show()
 
-for n,i in enumerate(dqs):
-  if (1<=n<=12):
-    plt.plot(i, label=convert_name(n))
-plt.title("DQ")
-plt.legend()
-plt.show()
+plotarray(qs, "Q", lab="CALF")
+plotarray(qs, "Q", lab="HIP")
+plotarray(qs, "Q", lab="THIGH")
 
-for n,i in enumerate(ddqs):
-  if (1<=n<=12):
-    plt.plot(i, label=convert_name(n))
-plt.title("DDQ")
-plt.legend()
-plt.show()
+plotarray(dqs, "DQ", lab="CALF")
+plotarray(dqs, "DQ", lab="HIP")
+plotarray(dqs, "DQ", lab="THIGH")
 
-for n,i in enumerate(tau_ests):
-  if (1<=n<=12):
-    plt.plot(i, label=convert_name(n))
-plt.title("Tau_est")
-plt.legend()
-plt.show()
+plotarray(ddqs, "DDQ", lab="CALF")
+plotarray(ddqs, "DDQ", lab="HIP")
+plotarray(ddqs, "DDQ", lab="THIGH")
+
+plotarray(tau_ests, "Tau", lab="CALF")
+plotarray(tau_ests, "Tau", lab="HIP")
+plotarray(tau_ests, "Tau", lab="THIGH")
