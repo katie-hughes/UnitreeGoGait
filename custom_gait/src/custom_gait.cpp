@@ -626,12 +626,13 @@ private:
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rr_calf_walk.at(timestep);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_walk.at(timestep);
+        /// LEGS ARE TRIGGERING OUT OF ORDER THIS IS ONLY THING I CAN THINK OF TO DO ;-;
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rl_calf_walk.at(timestep);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
         timestep++;
@@ -644,21 +645,9 @@ private:
       }
       case RESET:
       {
-        low_cmd.motor_cmd[gaitlib::FR_CALF].tau =  0.0;
-        low_cmd.motor_cmd[gaitlib::FR_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::FR_HIP].tau =   0.0;
-
-        low_cmd.motor_cmd[gaitlib::FL_CALF].tau =  0.0;
-        low_cmd.motor_cmd[gaitlib::FL_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::FL_HIP].tau =   0.0;
-
-        low_cmd.motor_cmd[gaitlib::RR_CALF].tau =  0.0;
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::RR_HIP].tau =   0.0;
-
-        low_cmd.motor_cmd[gaitlib::RL_CALF].tau =  0.0;
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].tau = 0.0;
-        low_cmd.motor_cmd[gaitlib::RL_HIP].tau =   0.0;
+        for (int i=0; i<gaitlib::NJOINTS; i++){
+          low_cmd.motor_cmd[i].tau = 0.0;
+        }
         break;
       }
       default:
