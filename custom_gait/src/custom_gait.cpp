@@ -265,18 +265,27 @@ private:
   /// @brief Generate a bezier tripod gait that moves exactly one foot at a time
   void generate_tripod_gait()
   {
-    long npoints_bezier = period;
-    // this factor is to give the 3 remaining legs time to complete the swing
-    long npoints_rest = 7 * npoints_bezier;
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
-    RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
-    std::vector<double> rest_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_rest);
-    std::vector<double> rest_y = gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
-    // std::vector<double> rest_y = gaitlib::stance(rest_x, delta, ctrl_y.at(0));
+    long tripod_npoints = 0.5 * period;
+    long npoints_sin = 0.5 * period;
+    long npoints_wait = 7 * period;
 
-    const auto final_x = gaitlib::concatenate(bez_x, rest_x);
-    const auto final_y = gaitlib::concatenate(bez_y, rest_y);
+    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, tripod_npoints);
+    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, tripod_npoints);
+
+    std::vector<double> tripod_sin_x =
+      gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sin);
+    std::vector<double> tripod_sin_y =
+      gaitlib::stance(tripod_sin_x, delta, ctrl_y.at(0));
+
+    const auto moving_x = gaitlib::concatenate(tripod_sin_x, bez_x);
+    const auto moving_y = gaitlib::concatenate(tripod_sin_y, bez_y);
+
+    const auto wait_x = gaitlib::linspace(moving_x.at(0), moving_x.at(0), npoints_wait);
+    const auto wait_y = gaitlib::linspace(moving_y.at(0), moving_y.at(0), npoints_wait);
+
+
+    const auto final_x = gaitlib::concatenate(moving_x, wait_x);
+    const auto final_y = gaitlib::concatenate(moving_y, wait_y);
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
     fr_calf_walk = fr_gaits.gait_calf;

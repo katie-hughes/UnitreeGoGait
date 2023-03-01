@@ -7,4 +7,4 @@
     damping: 2.0
     delta: 0.025
     stand_percentage: 0.8
-    gait_type: 0 # 0 = single leg, 1 = tripod, 2 = trot
+    gait_type: 1 # 0 = single leg, 1 = tripod, 2 = trot
