@@ -23,6 +23,10 @@ enum State{WAIT,
            STANDSTILL_TO_WALK,
            RESET};
 
+enum GaitType{SINGLE,     // Move just the front right leg
+              TRIPOD,     // Move all four legs, but one leg at a time
+              TROT};      // Move all four legs, FR and RL together and FL and RR together
+
 class CustomGait : public rclcpp::Node
 {
 public:
@@ -63,7 +67,11 @@ public:
 
     declare_parameter("stand_percentage", 0.75);
     stand_percentage = get_parameter("stand_percentage").as_double();
-    RCLCPP_INFO_STREAM(get_logger(), stand_percentage<<"percent stand height");
+    RCLCPP_INFO_STREAM(get_logger(), stand_percentage<<"%% stand height");
+
+    declare_parameter("gait_type", 0);
+    gait_type = static_cast<GaitType>(get_parameter("gait_type").as_int());
+    RCLCPP_INFO_STREAM(get_logger(), gait_type<<" gait_type");
 
     if ((stand_percentage < 0.05) || (stand_percentage > 0.95)){
       throw std::logic_error("Stand percentage must be between 0 and 1!");
@@ -105,10 +113,19 @@ public:
 
     stand_y = -2.0 * stand_percentage * gaitlib::LEG_LENGTH;
 
-    // Create walking procedure
-    // generate_trot_gait();
-    generate_tripod_gait();
-    // generate_stupid_gait();
+    // Create bezier for walking procedure
+    generate_bez_controls();
+
+    // generate a specific gait type
+    if (gait_type == SINGLE){
+      generate_stupid_gait();
+    } else if (gait_type == TRIPOD){
+      generate_tripod_gait();
+    } else if (gait_type == TROT){
+      generate_trot_gait();
+    } else {
+      throw std::logic_error("Gait Type must be 0, 1, or 2");
+    }
 
     // Create standup procedure
     generate_standup();
@@ -136,6 +153,8 @@ private:
   long period;
   // Delay for a bit before beginning the gait
   long initial_delay;
+  // these are bezier control points
+  std::vector<double> ctrl_x, ctrl_y;
   // these hold the primary gait
   std::vector<double> fr_calf_walk, fl_calf_walk, rr_calf_walk, rl_calf_walk, 
                       fr_thigh_walk, fl_thigh_walk, rr_thigh_walk, rl_thigh_walk;
@@ -147,6 +166,8 @@ private:
                       fr_thigh_switch, fl_thigh_switch, rr_thigh_switch, rl_thigh_switch;
   // Current state
   State state = WAIT;
+  // Gait type to generate
+  GaitType gait_type = SINGLE;
   // y coordinate the foot is at WRT hip when standing still
   double stand_y, stand_calf, stand_thigh;
   // y coordinate the foot is at WRT hip when standing still
@@ -175,8 +196,8 @@ private:
     const auto foot_current = gaitlib::fk(stand_thigh, stand_calf);
     const auto fr_desired = gaitlib::fk(fr_thigh_walk.at(0), fr_calf_walk.at(0));
     const auto fl_desired = gaitlib::fk(fl_thigh_walk.at(0), fl_calf_walk.at(0));
-    const auto rr_desired = gaitlib::fk(rl_thigh_walk.at(0), rl_calf_walk.at(0));
-    const auto rl_desired = gaitlib::fk(rr_thigh_walk.at(0), rr_calf_walk.at(0));
+    const auto rr_desired = gaitlib::fk(rr_thigh_walk.at(0), rr_calf_walk.at(0));
+    const auto rl_desired = gaitlib::fk(rl_thigh_walk.at(0), rl_calf_walk.at(0));
     // want to go from foot_current to fr_desired coordinates in a smooth and continuous way.
     // I know that both of these are the same y level. Just different x.
     RCLCPP_INFO_STREAM(get_logger(), "Current Stand: "<< foot_current.x << " " << foot_current.y);
@@ -213,38 +234,50 @@ private:
     rl_thigh_switch = rl_switch.gait_thigh;
   }
 
-  /// @brief Generate a bezier trotting gait
-  void generate_trot_gait(){
+  void generate_bez_controls(){
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto swing_height = 0.05;   // ???
-    const auto dswing_height = 0.025;   // ??
-    std::vector<double> ctrl_x{-1.0 * lspan,
-      -1.0 * lspan - dl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      0.0,
-      0.0,
-      0.0,
-      lspan + dl + ddl,
-      lspan + dl + ddl,
-      lspan + dl,
-      lspan};
-    std::vector<double> ctrl_y{stand_y,
-      stand_y,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y,
-      stand_y};
+    const auto swing_height = 0.05;   // controls the height of the swing off the floor
+    const auto dswing_height = 0.025;   // another bit to extend by
+    ctrl_x = std::vector<double> {-1.0 * lspan,
+                                  -1.0 * lspan - dl,
+                                  -1.0 * lspan - dl - ddl,
+                                  -1.0 * lspan - dl - ddl,
+                                  -1.0 * lspan - dl - ddl,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  lspan + dl + ddl,
+                                  lspan + dl + ddl,
+                                  lspan + dl,
+                                  lspan};
+    ctrl_y = std::vector<double> {stand_y,
+                                  stand_y,
+                                  stand_y + swing_height,
+                                  stand_y + swing_height,
+                                  stand_y + swing_height,
+                                  stand_y + swing_height,
+                                  stand_y + swing_height,
+                                  stand_y + swing_height + dswing_height,
+                                  stand_y + swing_height + dswing_height,
+                                  stand_y + swing_height + dswing_height,
+                                  stand_y,
+                                  stand_y};
 
+      // print out the controls
+      RCLCPP_INFO_STREAM(get_logger(), "Stand_y " << stand_y);
+
+      for (int i = 0; i < static_cast<int>(ctrl_x.size()); i++){
+        RCLCPP_INFO_STREAM(get_logger(), "X: " << i << " : " << ctrl_x.at(i));
+      }
+      for (int i = 0; i < static_cast<int>(ctrl_y.size()); i++){
+        RCLCPP_INFO_STREAM(get_logger(), "Y: " << i << " : " << ctrl_y.at(i));
+      }
+  }
+
+  /// @brief Generate a bezier trotting gait
+  void generate_trot_gait(){
     long npoints_bezier = period*0.75;
     long npoints_sinusoid = period-npoints_bezier;
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
@@ -272,36 +305,6 @@ private:
 
   /// @brief Generate a bezier tripod gait that moves exactly one foot at a time
   void generate_tripod_gait(){
-    const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
-    const auto dl = 0.025;   // extra bit to extend by after leaving floor
-    const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto swing_height = 0.05;   // ???
-    const auto dswing_height = 0.025;   // ??
-    std::vector<double> ctrl_x{-1.0 * lspan,
-      -1.0 * lspan - dl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      0.0,
-      0.0,
-      0.0,
-      lspan + dl + ddl,
-      lspan + dl + ddl,
-      lspan + dl,
-      lspan};
-    std::vector<double> ctrl_y{stand_y,
-      stand_y,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y,
-      stand_y};
-
     long npoints_bezier = period;
     // this factor is to give the 3 remaining legs time to complete the swing
     long npoints_rest = 7*npoints_bezier;
@@ -320,14 +323,14 @@ private:
     fr_thigh_walk = fr_gaits.gait_thigh;
     // Next: MODULATE based on fr
     // I want FR, RL, FL, RR for simple walk
-    rl_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.25);
-    rl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.25);
+    rl_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.75);
+    rl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.75);
 
     fl_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.5);
     fl_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.5);
 
-    rr_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.75);
-    rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.75);
+    rr_calf_walk =  gaitlib::modulate(fr_calf_walk, 0.25);
+    rr_thigh_walk = gaitlib::modulate(fr_thigh_walk, 0.25);
   }
 
   /// @brief Generate a stupid gait that only moves FR leg with the rest standing.
@@ -335,22 +338,24 @@ private:
     // Move from (0, stand_y) to (0 stand_y + 0.5*stroke_length) back to (0, stand_y)
 
     long stupid_npoints = period;
-    std::vector<double> x_1 = gaitlib::linspace(0, 0, stupid_npoints);
-    std::vector<double> y_1 = gaitlib::linspace(stand_y, stand_y+0.5*stroke_length, stupid_npoints);
+    long npoints_rest = 7*period;
 
-    std::vector<double> x_2 = gaitlib::linspace(0, 0, stupid_npoints);
-    std::vector<double> y_2 = gaitlib::linspace(stand_y+0.5*stroke_length, stand_y, stupid_npoints);
+    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, stupid_npoints);
+    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, stupid_npoints);
 
-    const auto final_x = gaitlib::concatenate(x_1, x_2);
-    const auto final_y = gaitlib::concatenate(y_1, y_2);
+    std::vector<double> stupid_rest_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_rest);
+    std::vector<double> stupid_rest_y = gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
+
+    const auto final_x = gaitlib::concatenate(bez_x, stupid_rest_x);
+    const auto final_y = gaitlib::concatenate(bez_y, stupid_rest_y);
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
     fr_calf_walk = fr_gaits.gait_calf;
     fr_thigh_walk = fr_gaits.gait_thigh;
 
     // rest of legs should just be stationary
-    std::vector<double> rest_x = gaitlib::linspace(0, 0, 2*stupid_npoints);
-    std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, 2*stupid_npoints);
+    std::vector<double> rest_x = gaitlib::linspace(0, 0, stupid_npoints+npoints_rest);
+    std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, stupid_npoints+npoints_rest);
     const auto rest_gaits = gaitlib::make_gait(rest_x, rest_y);
     fl_calf_walk = rest_gaits.gait_calf;
     fl_thigh_walk = rest_gaits.gait_thigh;
@@ -431,8 +436,8 @@ private:
     std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
-    RCLCPP_INFO_STREAM(get_logger(), "Lie Down");
     if (state == STANDSTILL){
+      RCLCPP_INFO_STREAM(get_logger(), "Lie Down");
       state = LIEDOWN;
       timestep = 0;
     } else {
@@ -440,19 +445,19 @@ private:
     }
   }
 
-  /// @brief Switch gait type between standing/walking
+  /// @brief If lying down, stand up
   /// @param Request: The empty request
   /// @param Response: The empty response
   void stand_up(
     std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
-    RCLCPP_INFO_STREAM(get_logger(), "Stand Up");
     if (state == LIESTILL){
+      RCLCPP_INFO_STREAM(get_logger(), "Stand Up");
       state = STANDUP;
       timestep = 0;
     } else {
-      RCLCPP_INFO_STREAM(get_logger(), "You must be in the liestill state to lie down!");
+      RCLCPP_INFO_STREAM(get_logger(), "You must be in the liestill state to stand up!");
     }
   }
 
@@ -494,8 +499,8 @@ private:
       case STANDUP:
       {
         low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(timestep);
-        RCLCPP_INFO_STREAM(get_logger(), "error_q:"<<fr_calf_stand.at(timestep) -
-                                                     low_state.motor_state.at(gaitlib::FR_CALF).q);
+        // RCLCPP_INFO_STREAM(get_logger(), "error_q:"<<fr_calf_stand.at(timestep) -
+        //                                              low_state.motor_state.at(gaitlib::FR_CALF).q);
         low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(timestep);
         low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0; 
 
@@ -626,13 +631,12 @@ private:
         low_cmd.motor_cmd[gaitlib::FL_THIGH].q = fl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::FL_HIP].q = 0.0; 
 
-        /// LEGS ARE TRIGGERING OUT OF ORDER THIS IS ONLY THING I CAN THINK OF TO DO ;-;
-        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rl_calf_walk.at(timestep);
-        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rl_thigh_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_CALF].q =  rr_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RR_THIGH].q = rr_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RR_HIP].q = 0.0; 
 
-        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rr_calf_walk.at(timestep);
-        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rr_thigh_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_CALF].q =  rl_calf_walk.at(timestep);
+        low_cmd.motor_cmd[gaitlib::RL_THIGH].q = rl_thigh_walk.at(timestep);
         low_cmd.motor_cmd[gaitlib::RL_HIP].q = 0.0; 
 
         timestep++;
