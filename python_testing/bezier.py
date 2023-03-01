@@ -103,45 +103,72 @@ def bez(points, step):
 def stance(xcoords, delta, y_level):
   res = []
   length = xcoords[0] - xcoords[-1]
-  for i in range(0, len(xcoords)):
-    ycoord = -1.0*delta*np.cos((np.pi/length)*xcoords[i]) + y_level
-    res.append(ycoord)
+  if (length == 0):
+    for i in range(0, len(xcoords)):
+      ycoord = -1.0*delta*np.sin((np.pi/len(xcoords))*i) + y_level
+      res.append(ycoord)
+  else:
+    for i in range(0, len(xcoords)):
+      ycoord = -1.0*delta*np.cos((np.pi/length)*xcoords[i]) + y_level
+      res.append(ycoord)
   return res
 
 curve_x = bez(points_x, step)
 curve_y = bez(points_y, step)
 
 
-sin_x = np.linspace(points[-1][0], points[0][0], 100)
+sin_x = np.linspace(points_x[0], points_x[0], 100)
 # print("Sin x:", sin_x)
-sin_y = stance(sin_x, 0.01, points[0][1])
+sin_y = stance(sin_x, 0.01, points_y[0])
 # print("siny is:", sin_y)
+
+moving_x = np.concatenate([sin_x, curve_x])
+moving_y = np.concatenate([sin_y, curve_y])
+
+wait_x = np.linspace(moving_x[-1], moving_x[0], 1000)
+wait_y = np.linspace(moving_y[-1], moving_y[0], 1000)
 
 order = len(points)-1
 
 
-fig = plt.figure()
-ax = fig.add_subplot()
-ws_circle = patches.Circle((0,0), radius=2*l, facecolor=(0, 1, 0, 0.5), label='Workspace')
-ax.add_patch(ws_circle)
-prev=None
+# fig = plt.figure()
+# ax = fig.add_subplot()
+# ws_circle = patches.Circle((0,0), radius=2*l, facecolor=(0, 1, 0, 0.5), label='Workspace')
+# ax.add_patch(ws_circle)
+# prev=None
+# for n,p in enumerate(points):
+#   ax.scatter(p[0], p[1], label='control '+str(n))
+#   if prev is not None:
+#     ax.plot((prev[0],p[0]),(prev[1],p[1]),linestyle='dashed',color='gray')
+#   prev = p
+# ax.plot(curve_x,curve_y, color='k')
+# ax.plot(sin_x, sin_y, color='r')
+# ax.plot(wait_x, wait_y, color='b')
+# ax.legend(bbox_to_anchor=(1.1, 1.05))
+# ax.set_title("Bezier Curve Generation: Order "+str(order))
+# ax.set_xlabel("X")
+# ax.set_ylabel("Y")
+# ax.set_ylim(top=0.0)
+# ax.set_xlim(left=-0.3, right=0.3)
+# ax.set_aspect('equal', 'box')
+# # fig.tight_layout()
+# # fig.layout
+# plt.savefig("plots/ws+bezier_"+str(order)+".png")
+# plt.show()
+
+
+
+prev = None
 for n,p in enumerate(points):
-  ax.scatter(p[0], p[1], label='control '+str(n))
+  plt.scatter(p[0], p[1], label=str(n))
   if prev is not None:
-    ax.plot((prev[0],p[0]),(prev[1],p[1]),linestyle='dashed',color='gray')
+    plt.plot((prev[0],p[0]),(prev[1],p[1]),linestyle='dashed',color='gray')
   prev = p
-ax.plot(curve_x,curve_y, color='k')
+plt.plot(curve_x,curve_y, color='k')
 plt.plot(sin_x, sin_y, color='r')
-ax.legend(bbox_to_anchor=(1.1, 1.05))
-ax.set_title("Bezier Curve Generation: Order "+str(order))
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_ylim(top=0.0)
-ax.set_aspect('equal', 'box')
-# fig.tight_layout()
-# fig.layout
-plt.savefig("plots/ws+bezier_"+str(order)+".png")
+plt.plot(wait_x, wait_y, color='b')
+# ax.legend(bbox_to_anchor=(1.0, 1.0))
+plt.title("Tripod Gait Generation")
+plt.savefig("plots/tripod.png")
 plt.show()
-
-
 
