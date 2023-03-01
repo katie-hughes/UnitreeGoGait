@@ -196,7 +196,7 @@ private:
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto swing_height = 0.05;   // controls the height of the swing off the floor
+    const auto swing_height = 0.075;   // controls the height of the swing off the floor
     const auto dswing_height = 0.025;   // another bit to extend by
     ctrl_x = std::vector<double> {-1.0 * lspan,
       -1.0 * lspan - dl,
@@ -237,8 +237,8 @@ private:
   /// @brief Generate a bezier trotting gait
   void generate_trot_gait()
   {
-    long npoints_bezier = period * 0.75;
-    long npoints_sinusoid = period - npoints_bezier;
+    long npoints_bezier = 0.5*period;
+    long npoints_sinusoid = 0.5*period;
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
     RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
@@ -298,27 +298,36 @@ private:
   {
     // Move from (0, stand_y) to (0 stand_y + 0.5*stroke_length) back to (0, stand_y)
 
-    long stupid_npoints = period;
-    long npoints_rest = 7 * period;
+    long stupid_npoints = 0.5 * period;
+    long npoints_sin = 0.5 * period;
+    long npoints_wait = 3 * period;
 
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, stupid_npoints);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, stupid_npoints);
 
-    std::vector<double> stupid_rest_x =
-      gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_rest);
-    std::vector<double> stupid_rest_y =
-      gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
+    std::vector<double> stupid_sin_x =
+      gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sin);
+    std::vector<double> stupid_sin_y =
+      // gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
+      gaitlib::stance(stupid_sin_x, delta, ctrl_y.at(0));
 
-    const auto final_x = gaitlib::concatenate(bez_x, stupid_rest_x);
-    const auto final_y = gaitlib::concatenate(bez_y, stupid_rest_y);
+    const auto moving_x = gaitlib::concatenate(stupid_sin_x, bez_x);
+    const auto moving_y = gaitlib::concatenate(stupid_sin_y, bez_y);
+
+    const auto wait_x = gaitlib::linspace(moving_x.at(0), moving_x.at(0), npoints_wait);
+    const auto wait_y = gaitlib::linspace(moving_y.at(0), moving_y.at(0), npoints_wait);
+
+
+    const auto final_x = gaitlib::concatenate(moving_x, wait_x);
+    const auto final_y = gaitlib::concatenate(moving_y, wait_y);
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
     fr_calf_walk = fr_gaits.gait_calf;
     fr_thigh_walk = fr_gaits.gait_thigh;
 
     // rest of legs should just be stationary
-    std::vector<double> rest_x = gaitlib::linspace(0, 0, stupid_npoints + npoints_rest);
-    std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, stupid_npoints + npoints_rest);
+    std::vector<double> rest_x = gaitlib::linspace(0, 0, final_x.size());
+    std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, final_y.size());
     const auto rest_gaits = gaitlib::make_gait(rest_x, rest_y);
     fl_calf_walk = rest_gaits.gait_calf;
     fl_thigh_walk = rest_gaits.gait_thigh;
@@ -513,8 +522,8 @@ private:
       case STANDUP:
         {
           low_cmd.motor_cmd[gaitlib::FR_CALF].q = fr_calf_stand.at(timestep);
-          // RCLCPP_INFO_STREAM(get_logger(), "error_q:"<<fr_calf_stand.at(timestep) -
-          //                                              low_state.motor_state.at(gaitlib::FR_CALF).q);
+          RCLCPP_INFO_STREAM(get_logger(), "error_q:"<<fr_calf_stand.at(timestep) -
+                                                       low_state.motor_state.at(gaitlib::FR_CALF).q);
           low_cmd.motor_cmd[gaitlib::FR_THIGH].q = fr_thigh_stand.at(timestep);
           low_cmd.motor_cmd[gaitlib::FR_HIP].q = 0.0;
 
