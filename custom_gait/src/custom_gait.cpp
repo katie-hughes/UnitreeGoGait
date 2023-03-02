@@ -73,8 +73,20 @@ public:
     gait_type = static_cast<GaitType>(get_parameter("gait_type").as_int());
     RCLCPP_INFO_STREAM(get_logger(), gait_type << " gait_type");
 
+    declare_parameter("tripod_offset", 1);
+    tripod_offset = get_parameter("tripod_offset").as_int();
+    RCLCPP_INFO_STREAM(get_logger(), tripod_offset << " tripod_offset");
+
+    declare_parameter("step_height", 0.05);
+    step_height = get_parameter("step_height").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), step_height << " step_height");
+
     if ((stand_percentage < 0.05) || (stand_percentage > 0.95)) {
       throw std::logic_error("Stand percentage must be between 0 and 1!");
+    }
+
+    if (tripod_offset < 1) {
+      throw std::logic_error("Tripod Offset must be 1 or more!");
     }
 
     // declare_parameter("torque", 1.0); // tau
@@ -173,7 +185,8 @@ private:
   // y coordinate the foot is at WRT hip when standing still
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
-  double rate_hz, stroke_length, standup_time, stiffness, damping, delta, stand_percentage;
+  double rate_hz, stroke_length, standup_time, stiffness, damping, delta,
+         stand_percentage, tripod_offset, step_height;
 
   /// @brief Initialize the low command message for when the dog first gets connected
   void init_low_cmd()
@@ -197,8 +210,7 @@ private:
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
     const auto dl = 0.025;   // extra bit to extend by after leaving floor
     const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto swing_height = 0.075;   // controls the height of the swing off the floor
-    const auto dswing_height = 0.025;   // another bit to extend by
+    const auto dstep_height = 0.025;   // another bit to extend by
     ctrl_x = std::vector<double> {
       stand_x + -1.0 * lspan,
       stand_x + -1.0 * lspan - dl,
@@ -215,14 +227,14 @@ private:
     ctrl_y = std::vector<double> {
       stand_y,
       stand_y,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
-      stand_y + swing_height + dswing_height,
+      stand_y + step_height,
+      stand_y + step_height,
+      stand_y + step_height,
+      stand_y + step_height,
+      stand_y + step_height,
+      stand_y + step_height + dstep_height,
+      stand_y + step_height + dstep_height,
+      stand_y + step_height + dstep_height,
       stand_y,
       stand_y};
 
@@ -271,7 +283,7 @@ private:
     RCLCPP_INFO_STREAM(get_logger(), "Generate Tripod Gait");
     long tripod_npoints = 0.5 * period;
     long npoints_sin = 0.5 * period;
-    long npoints_wait = 7 * period;
+    long npoints_wait = (4 * tripod_offset - 1) * period;
 
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, tripod_npoints);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, tripod_npoints);
