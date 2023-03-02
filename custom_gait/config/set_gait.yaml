@@ -8,5 +8,6 @@
     delta: 0.025
     stand_percentage: 0.8
     step_height: 0.10
+    gait_type: 2 # 0 = single leg, 1 = tripod, 2 = trot
     tripod_offset: 2
-    gait_type: 1 # 0 = single leg, 1 = tripod, 2 = trot
+    trot_offset: 2

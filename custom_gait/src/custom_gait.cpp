@@ -77,6 +77,10 @@ public:
     tripod_offset = get_parameter("tripod_offset").as_int();
     RCLCPP_INFO_STREAM(get_logger(), tripod_offset << " tripod_offset");
 
+    declare_parameter("trot_offset", 0);
+    trot_offset = get_parameter("trot_offset").as_int();
+    RCLCPP_INFO_STREAM(get_logger(), trot_offset << " trot_offset");
+
     declare_parameter("step_height", 0.05);
     step_height = get_parameter("step_height").as_double();
     RCLCPP_INFO_STREAM(get_logger(), step_height << " step_height");
@@ -167,6 +171,8 @@ private:
   long initial_delay;
   // these are bezier control points
   std::vector<double> ctrl_x, ctrl_y;
+  // this is the bezier curve of feet position
+  // std::vector<double> bez_x, bez_y;
   // these hold the primary gait
   std::vector<double> fr_calf_walk, fl_calf_walk, rr_calf_walk, rl_calf_walk,
     fr_thigh_walk, fl_thigh_walk, rr_thigh_walk, rl_thigh_walk;
@@ -186,7 +192,7 @@ private:
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
   double rate_hz, stroke_length, standup_time, stiffness, damping, delta,
-         stand_percentage, tripod_offset, step_height;
+         stand_percentage, tripod_offset, trot_offset, step_height;
 
   /// @brief Initialize the low command message for when the dog first gets connected
   void init_low_cmd()
@@ -254,14 +260,36 @@ private:
   {
     long npoints_bezier = 0.5*period;
     long npoints_sinusoid = 0.5*period;
+    long npoints_wait = trot_offset*period;
+    // npoints_wait = 
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
-    RCLCPP_INFO_STREAM(get_logger(), "Size of bez_x: " << bez_x.size());
-    std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sinusoid);
-    std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
-    const auto final_x = gaitlib::concatenate(bez_x, sin_x);
-    const auto final_y = gaitlib::concatenate(bez_y, sin_y);
+    std::vector<double> final_x, final_y;
+
+    if (trot_offset == 0){
+      // this corresponds to constant motion
+      std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sinusoid);
+      std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
+
+      final_x = gaitlib::concatenate(bez_x, sin_x);
+      final_y = gaitlib::concatenate(bez_y, sin_y);
+    } else {
+      // aitin period 
+      std::vector<double> sin_x =
+        gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), npoints_sinusoid);
+      std::vector<double> sin_y =
+        gaitlib::stance(sin_x, delta, ctrl_y.at(0));
+
+      const auto moving_x = gaitlib::concatenate(sin_x, bez_x);
+      const auto moving_y = gaitlib::concatenate(sin_y, bez_y);
+
+      const auto wait_x = gaitlib::linspace(moving_x.back(), moving_x.at(0), npoints_wait);
+      const auto wait_y = gaitlib::linspace(moving_y.back(), moving_y.at(0), npoints_wait);
+
+      final_x = gaitlib::concatenate(moving_x, wait_x);
+      final_y = gaitlib::concatenate(moving_y, wait_y);
+    }
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
     fr_calf_walk = fr_gaits.gait_calf;
