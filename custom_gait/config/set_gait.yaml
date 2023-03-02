@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     seconds_per_swing: 0.25
-    stroke_length: 0.1
+    stroke_length: 0.1 # 0.2 is really zooming
     standup_time: 1.5
     stiffness: 90.0
     damping: 3.0
@@ -11,3 +11,5 @@
     gait_type: 2 # 0 = single leg, 1 = tripod, 2 = trot
     tripod_offset: 4
     trot_offset: 4
+    step_limit: true
+    nsteps: 5

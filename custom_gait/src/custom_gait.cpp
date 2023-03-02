@@ -85,6 +85,14 @@ public:
     step_height = get_parameter("step_height").as_double();
     RCLCPP_INFO_STREAM(get_logger(), step_height << " step_height");
 
+    declare_parameter("step_limit", true);
+    step_limit = get_parameter("step_limit").as_bool();
+    RCLCPP_INFO_STREAM(get_logger(), step_limit << " step_limit");
+
+    declare_parameter("nsteps", 5);
+    nsteps = get_parameter("nsteps").as_int();
+    RCLCPP_INFO_STREAM(get_logger(), nsteps << " nsteps");
+
     if ((stand_percentage < 0.05) || (stand_percentage > 0.95)) {
       throw std::logic_error("Stand percentage must be between 0 and 1!");
     }
@@ -192,7 +200,9 @@ private:
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
   double rate_hz, stroke_length, standup_time, stiffness, damping, delta,
-         stand_percentage, tripod_offset, trot_offset, step_height;
+         stand_percentage, step_height;
+  bool step_limit;
+  int tripod_offset, trot_offset, nsteps, step_count;
 
   /// @brief Initialize the low command message for when the dog first gets connected
   void init_low_cmd()
@@ -704,7 +714,13 @@ private:
           // RCLCPP_INFO_STREAM(get_logger(), "timestep " << timestep);
           if (timestep >= static_cast<long>(fr_calf_walk.size())) {
             RCLCPP_INFO_STREAM(get_logger(), "New Step!");
+            step_count++;
             timestep = 0;
+            if (step_limit && (step_count >= nsteps)){
+              RCLCPP_INFO_STREAM(get_logger(), "Stop Stepping!");
+              state = STANDSTILL;
+              step_count = 0;
+            }
           }
           break;
         }
