@@ -287,28 +287,17 @@ private:
 
     std::vector<double> bez_x = gaitlib::bezier(ctrl_x, tripod_npoints);
     std::vector<double> bez_y = gaitlib::bezier(ctrl_y, tripod_npoints);
-    RCLCPP_INFO_STREAM(get_logger(), "Bez X front and back:" << bez_x.at(0) << " " << bez_x.back());
-    RCLCPP_INFO_STREAM(get_logger(), "Bez Y front and back:" << bez_y.at(0) << " " << bez_y.back());
 
     std::vector<double> tripod_sin_x =
-      // gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sin);
       gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), npoints_sin);
-      // TODO fix this so that Stance is ok if the vector is uniform
     std::vector<double> tripod_sin_y =
       gaitlib::stance(tripod_sin_x, delta, ctrl_y.at(0));
-
-    RCLCPP_INFO_STREAM(get_logger(), "Sin X front and back:" << tripod_sin_x.at(0) << " " << tripod_sin_x.back());
-    RCLCPP_INFO_STREAM(get_logger(), "Sin Y front and back:" << tripod_sin_y.at(0) << " " << tripod_sin_y.back());
 
     const auto moving_x = gaitlib::concatenate(tripod_sin_x, bez_x);
     const auto moving_y = gaitlib::concatenate(tripod_sin_y, bez_y);
 
     const auto wait_x = gaitlib::linspace(moving_x.back(), moving_x.at(0), npoints_wait);
     const auto wait_y = gaitlib::linspace(moving_y.back(), moving_y.at(0), npoints_wait);
-
-    RCLCPP_INFO_STREAM(get_logger(), "Wait X front and back:" << wait_x.at(0) << " " << wait_x.back());
-    RCLCPP_INFO_STREAM(get_logger(), "Wait Y front and back:" << wait_y.at(0) << " " << wait_y.back());
-
 
     const auto final_x = gaitlib::concatenate(moving_x, wait_x);
     const auto final_y = gaitlib::concatenate(moving_y, wait_y);
