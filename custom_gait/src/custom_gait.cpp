@@ -172,7 +172,7 @@ private:
   // these are bezier control points
   std::vector<double> ctrl_x, ctrl_y;
   // this is the bezier curve of feet position
-  // std::vector<double> bez_x, bez_y;
+  std::vector<double> bez_x, bez_y;
   // these hold the primary gait
   std::vector<double> fr_calf_walk, fl_calf_walk, rr_calf_walk, rl_calf_walk,
     fr_thigh_walk, fl_thigh_walk, rr_thigh_walk, rl_thigh_walk;
@@ -253,23 +253,22 @@ private:
     for (int i = 0; i < static_cast<int>(ctrl_y.size()); i++) {
       RCLCPP_INFO_STREAM(get_logger(), "Y: " << i << " : " << ctrl_y.at(i));
     }
+
+    // generate the curve 
+    bez_x = gaitlib::bezier(ctrl_x, period);
+    bez_y = gaitlib::bezier(ctrl_y, period);
   }
 
   /// @brief Generate a bezier trotting gait
   void generate_trot_gait()
   {
-    long npoints_bezier = 0.5*period;
-    long npoints_sinusoid = 0.5*period;
     long npoints_wait = trot_offset*period;
-    // npoints_wait = 
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, npoints_bezier);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, npoints_bezier);
 
     std::vector<double> final_x, final_y;
 
     if (trot_offset == 0){
       // this corresponds to constant motion
-      std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sinusoid);
+      std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), period);
       std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
       final_x = gaitlib::concatenate(bez_x, sin_x);
@@ -277,7 +276,7 @@ private:
     } else {
       // aitin period 
       std::vector<double> sin_x =
-        gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), npoints_sinusoid);
+        gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
       std::vector<double> sin_y =
         gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
@@ -309,15 +308,10 @@ private:
   void generate_tripod_gait()
   {
     RCLCPP_INFO_STREAM(get_logger(), "Generate Tripod Gait");
-    long tripod_npoints = 0.5 * period;
-    long npoints_sin = 0.5 * period;
     long npoints_wait = (4 * tripod_offset - 1) * period;
 
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, tripod_npoints);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, tripod_npoints);
-
     std::vector<double> tripod_sin_x =
-      gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), npoints_sin);
+      gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
     std::vector<double> tripod_sin_y =
       gaitlib::stance(tripod_sin_x, delta, ctrl_y.at(0));
 
@@ -349,26 +343,18 @@ private:
   void generate_stupid_gait()
   {
     // Move from (0, stand_y) to (0 stand_y + 0.5*stroke_length) back to (0, stand_y)
-
-    long stupid_npoints = 0.5 * period;
-    long npoints_sin = 0.5 * period;
     long npoints_wait = 3 * period;
 
-    std::vector<double> bez_x = gaitlib::bezier(ctrl_x, stupid_npoints);
-    std::vector<double> bez_y = gaitlib::bezier(ctrl_y, stupid_npoints);
+    std::vector<double> single_sin_x =
+      gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
+    std::vector<double> single_sin_y =
+      gaitlib::stance(single_sin_x, delta, ctrl_y.at(0));
 
-    std::vector<double> stupid_sin_x =
-      gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), npoints_sin);
-    std::vector<double> stupid_sin_y =
-      // gaitlib::linspace(ctrl_y.back(), ctrl_y.at(0), npoints_rest);
-      gaitlib::stance(stupid_sin_x, delta, ctrl_y.at(0));
+    const auto moving_x = gaitlib::concatenate(single_sin_x, bez_x);
+    const auto moving_y = gaitlib::concatenate(single_sin_y, bez_y);
 
-    const auto moving_x = gaitlib::concatenate(stupid_sin_x, bez_x);
-    const auto moving_y = gaitlib::concatenate(stupid_sin_y, bez_y);
-
-    const auto wait_x = gaitlib::linspace(moving_x.at(0), moving_x.at(0), npoints_wait);
-    const auto wait_y = gaitlib::linspace(moving_y.at(0), moving_y.at(0), npoints_wait);
-
+    const auto wait_x = gaitlib::linspace(moving_x.back(), moving_x.at(0), npoints_wait);
+    const auto wait_y = gaitlib::linspace(moving_y.back(), moving_y.at(0), npoints_wait);
 
     const auto final_x = gaitlib::concatenate(moving_x, wait_x);
     const auto final_y = gaitlib::concatenate(moving_y, wait_y);
