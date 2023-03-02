@@ -112,6 +112,7 @@ public:
     init_low_cmd();
 
     stand_y = -2.0 * stand_percentage * gaitlib::LEG_LENGTH;
+    stand_x = -0.05;
 
     // Create bezier for walking procedure
     generate_bez_controls();
@@ -168,7 +169,7 @@ private:
   // Gait type to generate
   GaitType gait_type = SINGLE;
   // y coordinate the foot is at WRT hip when standing still
-  double stand_y, stand_calf, stand_thigh;
+  double stand_x, stand_y, stand_calf, stand_thigh;
   // y coordinate the foot is at WRT hip when standing still
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
@@ -198,19 +199,21 @@ private:
     const auto ddl = 0.025;   // another extra bit to extend by LOL
     const auto swing_height = 0.075;   // controls the height of the swing off the floor
     const auto dswing_height = 0.025;   // another bit to extend by
-    ctrl_x = std::vector<double> {-1.0 * lspan,
-      -1.0 * lspan - dl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      -1.0 * lspan - dl - ddl,
-      0.0,
-      0.0,
-      0.0,
-      lspan + dl + ddl,
-      lspan + dl + ddl,
-      lspan + dl,
-      lspan};
-    ctrl_y = std::vector<double> {stand_y,
+    ctrl_x = std::vector<double> {
+      stand_x + -1.0 * lspan,
+      stand_x + -1.0 * lspan - dl,
+      stand_x + -1.0 * lspan - dl - ddl,
+      stand_x + -1.0 * lspan - dl - ddl,
+      stand_x + -1.0 * lspan - dl - ddl,
+      stand_x + 0.0,
+      stand_x + 0.0,
+      stand_x + 0.0,
+      stand_x + lspan + dl + ddl,
+      stand_x + lspan + dl + ddl,
+      stand_x + lspan + dl,
+      stand_x + lspan};
+    ctrl_y = std::vector<double> {
+      stand_y,
       stand_y,
       stand_y + swing_height,
       stand_y + swing_height,
@@ -346,7 +349,7 @@ private:
     fr_thigh_walk = fr_gaits.gait_thigh;
 
     // rest of legs should just be stationary
-    std::vector<double> rest_x = gaitlib::linspace(0, 0, final_x.size());
+    std::vector<double> rest_x = gaitlib::linspace(stand_x, stand_x, final_x.size());
     std::vector<double> rest_y = gaitlib::linspace(stand_y, stand_y, final_y.size());
     const auto rest_gaits = gaitlib::make_gait(rest_x, rest_y);
     fl_calf_walk = rest_gaits.gait_calf;
@@ -374,7 +377,7 @@ private:
 
     // This actually stands the robot up
     long standup_pts2 = rate_hz * standup_time;
-    const auto stand_up_x2 = gaitlib::linspace(0.0, 0.0, standup_pts2);
+    const auto stand_up_x2 = gaitlib::linspace(0.0, stand_x, standup_pts2);
     const auto stand_up_y2 = gaitlib::linspace(stand_offset, stand_y, standup_pts2);
 
     const auto stand_up_x = gaitlib::concatenate(stand_up_x1, stand_up_x2);
@@ -392,7 +395,7 @@ private:
     rl_thigh_stand = stand_up_gait.gait_thigh;
 
 
-    const auto standing_joints = gaitlib::ik(0.0, stand_y);
+    const auto standing_joints = gaitlib::ik(stand_x, stand_y);
     stand_calf = standing_joints.calf_lefty;
     stand_thigh = standing_joints.thigh_lefty;
 
