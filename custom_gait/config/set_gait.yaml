@@ -1,15 +1,30 @@
 /**:
   ros__parameters:
+    # These control how fast actions occur on the dog
     seconds_per_swing: 0.25
-    stroke_length: 0.1 # 0.2 is really zooming
     standup_time: 1.5
+    # These are Kp and Kd constants used for all motors
     stiffness: 90.0
     damping: 3.0
-    delta: 0.025
+    # This is related to the force into the ground right before the step.
+    # It's the distance into the floor it "pushes"
+    delta: 0.03
+    # How high the dog is off the floor in the standing position
     stand_percentage: 0.8
-    step_height: 0.10
-    gait_type: 2 # 0 = single leg, 1 = tripod, 2 = trot
+    # These are for constructing the step. 
+    # X (forward/backwards) params:
+    stroke_length: 0.05 # 0.2 is really zooming. 0.1 seems good
+    dx1: 0.0125
+    dx2: 0.0125
+    # Y (Up/down) params
+    step_height: 0.04
+    dy: 0.0125
+    # gait type: 0 = single leg, 1 = tripod, 2 = trot
+    gait_type: 2 
+    # Must be at least 1
     tripod_offset: 4
-    trot_offset: 4
+    # 0 for continuous trot, any larger number for pauses
+    trot_offset: 0
+    # Used to automatically stop walking after a certain amount of steps.
     step_limit: true
     nsteps: 5

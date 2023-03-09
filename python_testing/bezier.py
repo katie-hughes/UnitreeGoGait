@@ -17,23 +17,24 @@ hip_lo = -0.86
 hip_hi =  0.86
 
 
-lspan = 0.10
-dl = 0.025
-ddl = 0.025
+lspan = 0.006
+dx1 = 0.0125
+dx2 = 0.0125
 stand_floor = -1.5*l
-swing_height = 0.05
-dswing_height = 0.025
+swing_height = 0.04
+dy = 0.0125
+delta = 0.03
 points_x = [-1.0*lspan,
-            -1.0*lspan - dl,
-            -1.0*lspan - dl - ddl,
-            -1.0*lspan - dl - ddl,
-            -1.0*lspan - dl - ddl,
+            -1.0*lspan - dx1,
+            -1.0*lspan - dx1 - dx2,
+            -1.0*lspan - dx1 - dx2,
+            -1.0*lspan - dx1 - dx2,
             0.0,
             0.0,
             0.0,
-            lspan + dl + ddl,
-            lspan + dl + ddl,
-            lspan + dl,
+            lspan + dx1 + dx2,
+            lspan + dx1 + dx2,
+            lspan + dx1,
             lspan]
 points_y = [stand_floor,
             stand_floor,
@@ -42,9 +43,9 @@ points_y = [stand_floor,
             stand_floor + swing_height,
             stand_floor + swing_height,
             stand_floor + swing_height,
-            stand_floor + swing_height + dswing_height,
-            stand_floor + swing_height + dswing_height,
-            stand_floor + swing_height + dswing_height,
+            stand_floor + swing_height + dy,
+            stand_floor + swing_height + dy,
+            stand_floor + swing_height + dy,
             stand_floor,
             stand_floor]
 
@@ -117,16 +118,16 @@ curve_x = bez(points_x, step)
 curve_y = bez(points_y, step)
 
 
-sin_x = np.linspace(points_x[0], points_x[0], 100)
+sin_x = np.linspace(points_x[-1], points_x[0], 100)
 # print("Sin x:", sin_x)
-sin_y = stance(sin_x, 0.01, points_y[0])
+sin_y = stance(sin_x, delta, points_y[0])
 # print("siny is:", sin_y)
 
 moving_x = np.concatenate([sin_x, curve_x])
 moving_y = np.concatenate([sin_y, curve_y])
 
-wait_x = np.linspace(moving_x[-1], moving_x[0], 1000)
-wait_y = np.linspace(moving_y[-1], moving_y[0], 1000)
+# wait_x = np.linspace(moving_x[-1], moving_x[0], 1000)
+# wait_y = np.linspace(moving_y[-1], moving_y[0], 1000)
 
 order = len(points)-1
 
@@ -166,9 +167,9 @@ for n,p in enumerate(points):
   prev = p
 plt.plot(curve_x,curve_y, color='k')
 plt.plot(sin_x, sin_y, color='r')
-plt.plot(wait_x, wait_y, color='b')
+# plt.plot(wait_x, wait_y, color='b')
 # ax.legend(bbox_to_anchor=(1.0, 1.0))
-plt.title("Tripod Gait Generation")
-plt.savefig("plots/tripod.png")
+plt.title("Trot Gait Generation")
+plt.savefig("plots/trot.png")
 plt.show()
 

@@ -85,6 +85,18 @@ public:
     step_height = get_parameter("step_height").as_double();
     RCLCPP_INFO_STREAM(get_logger(), step_height << " step_height");
 
+    declare_parameter("dx1", 0.025);
+    dx1 = get_parameter("dx1").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), dx1 << " dx1");
+
+    declare_parameter("dx2", 0.025);
+    dx2 = get_parameter("dx2").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), dx2 << " dx2");
+
+    declare_parameter("dy", 0.025);
+    dy = get_parameter("dy").as_double();
+    RCLCPP_INFO_STREAM(get_logger(), dy << " dy");
+
     declare_parameter("step_limit", true);
     step_limit = get_parameter("step_limit").as_bool();
     RCLCPP_INFO_STREAM(get_logger(), step_limit << " step_limit");
@@ -200,7 +212,7 @@ private:
   double liedown_y, liedown_calf, liedown_thigh;
   // for reading in parameters
   double rate_hz, stroke_length, standup_time, stiffness, damping, delta,
-         stand_percentage, step_height;
+         stand_percentage, step_height, dx1, dx2, dy;
   bool step_limit;
   int tripod_offset, trot_offset, nsteps, step_count;
 
@@ -224,21 +236,18 @@ private:
   void generate_bez_controls()
   {
     const auto lspan = 0.5 * stroke_length;   // half of "stroke length", ie how long it's on the floor
-    const auto dl = 0.025;   // extra bit to extend by after leaving floor
-    const auto ddl = 0.025;   // another extra bit to extend by LOL
-    const auto dstep_height = 0.025;   // another bit to extend by
     ctrl_x = std::vector<double> {
       stand_x + -1.0 * lspan,
-      stand_x + -1.0 * lspan - dl,
-      stand_x + -1.0 * lspan - dl - ddl,
-      stand_x + -1.0 * lspan - dl - ddl,
-      stand_x + -1.0 * lspan - dl - ddl,
+      stand_x + -1.0 * lspan - dx1,
+      stand_x + -1.0 * lspan - dx1 - dx2,
+      stand_x + -1.0 * lspan - dx1 - dx2,
+      stand_x + -1.0 * lspan - dx1 - dx2,
       stand_x + 0.0,
       stand_x + 0.0,
       stand_x + 0.0,
-      stand_x + lspan + dl + ddl,
-      stand_x + lspan + dl + ddl,
-      stand_x + lspan + dl,
+      stand_x + lspan + dx1 + dx2,
+      stand_x + lspan + dx1 + dx2,
+      stand_x + lspan + dx1,
       stand_x + lspan};
     ctrl_y = std::vector<double> {
       stand_y,
@@ -248,9 +257,9 @@ private:
       stand_y + step_height,
       stand_y + step_height,
       stand_y + step_height,
-      stand_y + step_height + dstep_height,
-      stand_y + step_height + dstep_height,
-      stand_y + step_height + dstep_height,
+      stand_y + step_height + dy,
+      stand_y + step_height + dy,
+      stand_y + step_height + dy,
       stand_y,
       stand_y};
 
@@ -267,6 +276,7 @@ private:
     // generate the curve 
     bez_x = gaitlib::bezier(ctrl_x, period);
     bez_y = gaitlib::bezier(ctrl_y, period);
+
   }
 
   /// @brief Generate a bezier trotting gait
@@ -279,7 +289,7 @@ private:
     if (trot_offset == 0){
       // this corresponds to constant motion
       std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), period);
-      std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
+      std::vector<double> sin_y = gaitlib::stance(sin_x, -delta, ctrl_y.at(0));
 
       final_x = gaitlib::concatenate(bez_x, sin_x);
       final_y = gaitlib::concatenate(bez_y, sin_y);
@@ -288,7 +298,7 @@ private:
       std::vector<double> sin_x =
         gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
       std::vector<double> sin_y =
-        gaitlib::stance(sin_x, delta, ctrl_y.at(0));
+        gaitlib::stance(sin_x, -delta, ctrl_y.at(0));
 
       const auto moving_x = gaitlib::concatenate(sin_x, bez_x);
       const auto moving_y = gaitlib::concatenate(sin_y, bez_y);
@@ -298,6 +308,11 @@ private:
 
       final_x = gaitlib::concatenate(moving_x, wait_x);
       final_y = gaitlib::concatenate(moving_y, wait_y);
+    }
+    // print coords ???
+    for (int i = 0; i < static_cast<int>(final_x.size()); i++){
+      RCLCPP_INFO_STREAM(get_logger(), "Point " << i << ": (" << final_x.at(i) << ", " 
+                                                              << final_y.at(i) << ")");
     }
 
     const auto fr_gaits = gaitlib::make_gait(final_x, final_y);
@@ -323,7 +338,7 @@ private:
     std::vector<double> tripod_sin_x =
       gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
     std::vector<double> tripod_sin_y =
-      gaitlib::stance(tripod_sin_x, delta, ctrl_y.at(0));
+      gaitlib::stance(tripod_sin_x, -delta, ctrl_y.at(0));
 
     const auto moving_x = gaitlib::concatenate(tripod_sin_x, bez_x);
     const auto moving_y = gaitlib::concatenate(tripod_sin_y, bez_y);
@@ -358,7 +373,7 @@ private:
     std::vector<double> single_sin_x =
       gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
     std::vector<double> single_sin_y =
-      gaitlib::stance(single_sin_x, delta, ctrl_y.at(0));
+      gaitlib::stance(single_sin_x, -delta, ctrl_y.at(0));
 
     const auto moving_x = gaitlib::concatenate(single_sin_x, bez_x);
     const auto moving_y = gaitlib::concatenate(single_sin_y, bez_y);
