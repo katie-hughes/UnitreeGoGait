@@ -13,9 +13,9 @@
     stand_percentage: 0.8
     # These are for constructing the step. 
     # X (forward/backwards) params:
-    stroke_length: 0.05 # 0.2 is really zooming. 0.1 seems good
-    dx1: 0.0125
-    dx2: 0.0125
+    stroke_length: 0.01 # 0.2 is really zooming. 0.1 seems good
+    dx1: 0.0 # 125
+    dx2: 0.0 # 125
     # Y (Up/down) params
     step_height: 0.04
     dy: 0.0125

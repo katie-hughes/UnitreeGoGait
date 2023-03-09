@@ -61,7 +61,8 @@ std::vector<double> linspace(double start, double end, double npoints){
 
 std::vector<double> stance(std::vector<double> xcoords, double delta, double y_level){
   std::vector<double> res;
-  double len = xcoords.front() - xcoords.back();
+  double len = xcoords.back() - xcoords.front();
+  // need to account for offset if x is not at 0!!!
   long npoints = static_cast<long>(xcoords.size());
   // what if len = 0?
   if (len == 0){
@@ -70,8 +71,9 @@ std::vector<double> stance(std::vector<double> xcoords, double delta, double y_l
       res.push_back(ycoord);
     }
   } else {
+    const auto middle_x = xcoords.at(static_cast<int>(0.5*npoints));
     for(long i=0; i<npoints; i++){
-      double ycoord = -1.0*delta*cos((M_PI/len)*xcoords.at(i)) + y_level;
+      double ycoord = -1.0*delta*cos((M_PI/len)*(xcoords.at(i) - middle_x)) + y_level;
       res.push_back(ycoord);
     }
   }

@@ -288,8 +288,13 @@ private:
 
     if (trot_offset == 0){
       // this corresponds to constant motion
-      std::vector<double> sin_x = gaitlib::linspace(ctrl_x.back(), ctrl_x.at(0), period);
-      std::vector<double> sin_y = gaitlib::stance(sin_x, -delta, ctrl_y.at(0));
+      const auto ctrl_back = ctrl_x.back();
+      const auto ctrl_front = ctrl_x.front();
+
+      RCLCPP_INFO_STREAM(get_logger(), "Back: " << ctrl_back << " Front " << ctrl_front);
+
+      std::vector<double> sin_x = gaitlib::linspace(ctrl_back, ctrl_front, period);
+      std::vector<double> sin_y = gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
       final_x = gaitlib::concatenate(bez_x, sin_x);
       final_y = gaitlib::concatenate(bez_y, sin_y);
@@ -298,7 +303,7 @@ private:
       std::vector<double> sin_x =
         gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
       std::vector<double> sin_y =
-        gaitlib::stance(sin_x, -delta, ctrl_y.at(0));
+        gaitlib::stance(sin_x, delta, ctrl_y.at(0));
 
       const auto moving_x = gaitlib::concatenate(sin_x, bez_x);
       const auto moving_y = gaitlib::concatenate(sin_y, bez_y);
@@ -338,7 +343,7 @@ private:
     std::vector<double> tripod_sin_x =
       gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
     std::vector<double> tripod_sin_y =
-      gaitlib::stance(tripod_sin_x, -delta, ctrl_y.at(0));
+      gaitlib::stance(tripod_sin_x, delta, ctrl_y.at(0));
 
     const auto moving_x = gaitlib::concatenate(tripod_sin_x, bez_x);
     const auto moving_y = gaitlib::concatenate(tripod_sin_y, bez_y);
@@ -373,7 +378,7 @@ private:
     std::vector<double> single_sin_x =
       gaitlib::linspace(ctrl_x.at(0), ctrl_x.at(0), period);
     std::vector<double> single_sin_y =
-      gaitlib::stance(single_sin_x, -delta, ctrl_y.at(0));
+      gaitlib::stance(single_sin_x, delta, ctrl_y.at(0));
 
     const auto moving_x = gaitlib::concatenate(single_sin_x, bez_x);
     const auto moving_y = gaitlib::concatenate(single_sin_y, bez_y);

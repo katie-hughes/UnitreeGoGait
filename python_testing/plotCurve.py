@@ -29,5 +29,6 @@ colors = cm.rainbow(np.linspace(0, 1, len(curvex)))
 for i in range(0, len(curvex)):
   plt.scatter(curvex[i], curvey[i], color = colors[i])
 
+plt.title("Blue = front, red = back")
 plt.savefig("plots/myCurve.png")
 plt.show()
