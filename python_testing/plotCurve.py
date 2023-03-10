@@ -9,7 +9,6 @@ with open("myCurve.txt") as f:
   lines = f.readlines()
   for l in lines:
     splt = l.split()
-    # print(splt)
     # x in place 6 y in place 7
     x = splt[6]
     y = splt[7]
@@ -27,8 +26,16 @@ with open("myCurve.txt") as f:
 colors = cm.rainbow(np.linspace(0, 1, len(curvex)))
 
 for i in range(0, len(curvex)):
-  plt.scatter(curvex[i], curvey[i], color = colors[i])
+  mylabel = None
+  if (i == 0):
+    mylabel = "Front"
+  elif (i == len(curvex) - 1):
+    mylabel = "Back"
+  plt.scatter(curvex[i], curvey[i], color = colors[i], label=mylabel)
 
-plt.title("Blue = front, red = back")
+plt.title("Desired Bezier Curve Trajectory")
+plt.legend()
+plt.xlabel("X coordinate WRT hip (m)")
+plt.ylabel("Y coordinate WRT hip (m)")
 plt.savefig("plots/myCurve.png")
 plt.show()

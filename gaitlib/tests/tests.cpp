@@ -58,4 +58,18 @@ namespace gaitlib
         REQUIRE(modulate(init, 1.00) == init);
     }
 
+    TEST_CASE("ik3D: Z=0", "[gaits]")
+    {
+        // first test that it's the same as regular ik if z = 0
+        const auto x = 0.0;
+        const auto y = -0.1;
+        const auto ik_regular = ik(x, y);
+        const auto ik_3d = ik3D(x, y, 0.0);
+        REQUIRE(ik_3d.hip == 0.0);
+        REQUIRE(ik_3d.leg.calf_lefty  == ik_regular.calf_lefty);
+        REQUIRE(ik_3d.leg.calf_righty == ik_regular.calf_righty);
+        REQUIRE(ik_3d.leg.thigh_lefty  == ik_regular.thigh_lefty);
+        REQUIRE(ik_3d.leg.thigh_righty == ik_regular.thigh_righty);
+    }
+
 }

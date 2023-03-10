@@ -13,18 +13,18 @@
     stand_percentage: 0.8
     # These are for constructing the step. 
     # X (forward/backwards) params:
-    stroke_length: 0.01 # 0.2 is really zooming. 0.1 seems good
-    dx1: 0.0 # 125
-    dx2: 0.0 # 125
+    stroke_length: 0.025 # 0.2 is really zooming. 0.1 seems good
+    dx1: 0.0125
+    dx2: 0.0125
     # Y (Up/down) params
     step_height: 0.04
     dy: 0.0125
-    # gait type: 0 = single leg, 1 = tripod, 2 = trot
-    gait_type: 2 
+    # gait type: 0 = single leg, 1 = tripod, 2 = trot, 3 = sideways trot
+    gait_type: 3
     # Must be at least 1
     tripod_offset: 4
     # 0 for continuous trot, any larger number for pauses
     trot_offset: 0
     # Used to automatically stop walking after a certain amount of steps.
     step_limit: true
-    nsteps: 5
+    nsteps: 4

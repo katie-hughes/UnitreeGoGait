@@ -68,6 +68,16 @@ namespace gaitlib{
     std::vector<double> gait_thigh;
   };
 
+  /// @brief Way of packaging the joint trajectories for thigh, calf, and hip.
+  struct MyGait3D {
+    /// @brief Calf trajectory
+    std::vector<double> gait_calf;
+    /// @brief Thigh trajectory
+    std::vector<double> gait_thigh;
+    /// @brief Hip Trajectory
+    std::vector<double> gait_hip;
+  };
+
   /// @brief Way of packaging the solution for the IK of the legs
   /// (thigh_lefty, calf_lefty) is one solution and (thigh_righty, calf_righty) is the other
   struct IKResult {
@@ -79,6 +89,14 @@ namespace gaitlib{
     double thigh_righty;
     /// @brief righty calf angle in radians
     double calf_righty;
+  };
+
+  /// @brief IK result involving the hip joint
+  struct IKResult3D {
+    /// @brief Hip angle (1 solution)
+    double hip;
+    /// @brief Calf and Thigh angles (2 solutions)
+    IKResult leg;
   };
 
   /// @brief Holds Euclidean coordinates WRT the hip joint
@@ -166,6 +184,21 @@ namespace gaitlib{
   /// @param desired_y desired y trajectory of foot
   /// @return the calf and thigh joint trajectories
   MyGait make_gait(std::vector<double> desired_x, std::vector<double> desired_y);
+
+  /// @brief IK result of a 3D desired position for RIGHT legs
+  /// (for left legs, negate the hip angle!)
+  /// @param x desired x coordinate WRT hip as origin (m)
+  /// @param y desired y coordinate WRT hip as origin (m)
+  /// @param z desired z coordinate WRT hip as origin (m)
+  /// @return IK solution: 1 hip angle, set of 2 calf/thigh angles.
+  IKResult3D ik3D(double x, double y, double z);
+
+  /// @brief Create joint trajectories for calf, thigh, and hip for desired foot trajectory
+  /// @param desired_x desired x trajectory of foot
+  /// @param desired_y desired y trajectory of foot
+  /// @param desired_z desired z trajectory of foot
+  /// @return the calf and thigh joint trajectories
+  MyGait3D make_3Dgait(std::vector<double> desired_x, std::vector<double> desired_y, std::vector<double> desired_z);
 }
 
 #endif

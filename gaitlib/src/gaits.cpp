@@ -119,13 +119,41 @@ MyGait make_gait(std::vector<double> desired_x, std::vector<double> desired_y)
       for (size_t i = 0; i < desired_x.size(); i++) {
         const auto ik_result = ik(desired_x[i], desired_y[i]);
         // Here we just arbitrarily choose left result (it maintained joint limits in my example)
-        // The left thigh result is 0th element and calf result is 1st
-        // Keep rest of joints stationary for now
         gait_calf.push_back(ik_result.calf_lefty);
         gait_thigh.push_back(ik_result.thigh_lefty);
       }
     }
     return MyGait{gait_calf, gait_thigh};
   }
+
+
+  IKResult3D ik3D(double x, double y, double z){
+    // If z = 0, this is just regular ik.
+    // if z != 0, first find hip angle (offset). From there find relative x and y
+    // and do regular ik.
+    const auto theta_hip = atan(z / y);
+    const auto new_ik = ik(x, -sqrt(y*y + z*z));
+    return IKResult3D{theta_hip, new_ik};
+  }
+
+
+  MyGait3D make_3Dgait(std::vector<double> desired_x,
+                       std::vector<double> desired_y,
+                       std::vector<double> desired_z){
+    std::vector<double> gait_calf;
+    std::vector<double> gait_thigh;
+    std::vector<double> gait_hip;
+    if ((desired_x.size() == desired_y.size()) && (desired_x.size() == desired_z.size())) {
+      for (size_t i = 0; i < desired_x.size(); i++) {
+        const auto ik_result = ik3D(desired_x[i], desired_y[i], desired_z[i]);
+        // Here we just arbitrarily choose left result (it maintained joint limits in my example)
+        gait_calf.push_back(ik_result.leg.calf_lefty);
+        gait_thigh.push_back(ik_result.leg.thigh_lefty);
+        gait_hip.push_back(ik_result.hip);
+      }
+    }
+    return MyGait3D{gait_calf, gait_thigh, gait_hip};
+  }
+
 
 }
