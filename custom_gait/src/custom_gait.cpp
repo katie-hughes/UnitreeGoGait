@@ -142,11 +142,11 @@ public:
       std::bind(&CustomGait::state_cb, this, std::placeholders::_1));
 
     walk_forwards_ = create_service<std_srvs::srv::Empty>(
-      "walk",
+      "forwards",
       std::bind(&CustomGait::walk_forwards, this, std::placeholders::_1, std::placeholders::_2));
 
     walk_backwards_ = create_service<std_srvs::srv::Empty>(
-      "reverse",
+      "backwards",
       std::bind(&CustomGait::walk_backwards, this, std::placeholders::_1, std::placeholders::_2));
 
     walk_left_ = create_service<std_srvs::srv::Empty>(
