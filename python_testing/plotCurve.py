@@ -28,12 +28,12 @@ colors = cm.rainbow(np.linspace(0, 1, len(curvex)))
 for i in range(0, len(curvex)):
   mylabel = None
   if (i == 0):
-    mylabel = "Front"
+    mylabel = "Start"
   elif (i == len(curvex) - 1):
-    mylabel = "Back"
+    mylabel = "End"
   plt.scatter(curvex[i], curvey[i], color = colors[i], label=mylabel)
 
-plt.title("Desired Bezier Curve Trajectory")
+plt.title("Foot Trajectory to be Followed")
 plt.legend()
 plt.xlabel("X coordinate WRT hip (m)")
 plt.ylabel("Y coordinate WRT hip (m)")

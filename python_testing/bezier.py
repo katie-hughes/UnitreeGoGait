@@ -17,25 +17,27 @@ hip_lo = -0.86
 hip_hi =  0.86
 
 
-lspan = 0.006
+lspan = 0.025
 dx1 = 0.0125
 dx2 = 0.0125
-stand_floor = -1.5*l
+stand_floor = -0.8*(2*l)
 swing_height = 0.04
 dy = 0.0125
-delta = 0.03
-points_x = [-1.0*lspan,
-            -1.0*lspan - dx1,
-            -1.0*lspan - dx1 - dx2,
-            -1.0*lspan - dx1 - dx2,
-            -1.0*lspan - dx1 - dx2,
-            0.0,
-            0.0,
-            0.0,
-            lspan + dx1 + dx2,
-            lspan + dx1 + dx2,
-            lspan + dx1,
-            lspan]
+delta = 0.01
+stand_x = -0.05
+
+points_x = [stand_x + -1.0*lspan,
+            stand_x + -1.0*lspan - dx1,
+            stand_x + -1.0*lspan - dx1 - dx2,
+            stand_x + -1.0*lspan - dx1 - dx2,
+            stand_x + -1.0*lspan - dx1 - dx2,
+            stand_x + 0.0,
+            stand_x + 0.0,
+            stand_x + 0.0,
+            stand_x + lspan + dx1 + dx2,
+            stand_x + lspan + dx1 + dx2,
+            stand_x + lspan + dx1,
+            stand_x + lspan]
 points_y = [stand_floor,
             stand_floor,
             stand_floor + swing_height,
@@ -110,7 +112,7 @@ def stance(xcoords, delta, y_level):
       res.append(ycoord)
   else:
     for i in range(0, len(xcoords)):
-      ycoord = -1.0*delta*np.cos((np.pi/length)*xcoords[i]) + y_level
+      ycoord = -1.0*delta*np.cos((np.pi/length)*(xcoords[i]-stand_x)) + y_level
       res.append(ycoord)
   return res
 
@@ -161,15 +163,16 @@ order = len(points)-1
 
 prev = None
 for n,p in enumerate(points):
-  plt.scatter(p[0], p[1], label=str(n))
+  plt.scatter(p[0], p[1]) #, label=str(n))
   if prev is not None:
     plt.plot((prev[0],p[0]),(prev[1],p[1]),linestyle='dashed',color='gray')
   prev = p
-plt.plot(curve_x,curve_y, color='k')
-plt.plot(sin_x, sin_y, color='r')
+plt.plot(curve_x,curve_y, color='k', label='Swing')
+plt.plot(sin_x, sin_y, color='r', label='Stance')
 # plt.plot(wait_x, wait_y, color='b')
 # ax.legend(bbox_to_anchor=(1.0, 1.0))
-plt.title("Trot Gait Generation")
+plt.legend()
+plt.title("Foot Trajectory Generation")
 plt.savefig("plots/trot.png")
 plt.show()
 
