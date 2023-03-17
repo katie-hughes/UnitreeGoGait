@@ -33,9 +33,9 @@ for i in range(0, len(curvex)):
     mylabel = "End"
   plt.scatter(curvex[i], curvey[i], color = colors[i], label=mylabel)
 
-plt.title("Foot Trajectory to be Followed")
+plt.title("Forward Gait Foot Trajectory")
 plt.legend()
 plt.xlabel("X coordinate WRT hip (m)")
 plt.ylabel("Y coordinate WRT hip (m)")
-plt.savefig("plots/myCurve.png")
+plt.savefig("plots/myCurve_Forward.png")
 plt.show()

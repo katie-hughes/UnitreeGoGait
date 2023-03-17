@@ -23,7 +23,7 @@
     # Y (Up/down) params
     step_height: 0.04
     dy: 0.0125
-    # gait type: 0 = single leg, 1 = tripod, 2 = trot, 3 = sideways trot
+    # gait type: 0 = single leg, 1 = tripod, 2 = trot
     gait_type: 2
     # Must be at least 1
     tripod_offset: 4
@@ -31,4 +31,4 @@
     trot_offset: 0
     # Used to automatically stop walking after a certain amount of steps.
     step_limit: true
-    nsteps: 4
+    nsteps: 16

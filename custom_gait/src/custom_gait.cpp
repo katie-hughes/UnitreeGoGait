@@ -28,8 +28,7 @@ enum State {WAIT,
 
 enum GaitType {SINGLE,     // Move just the front right leg
   TRIPOD,                  // Move all four legs, but one leg at a time
-  TROT,                    // Move all four legs, FR and RL together and FL and RR together
-  SIDEWAYS                 // Move laterally!
+  TROT                    // Move all four legs, FR and RL together and FL and RR together
   };
 
 class CustomGait : public rclcpp::Node
@@ -43,7 +42,7 @@ public:
     RCLCPP_INFO_STREAM(get_logger(), "Publish rate is " << ((int)(1000. / rate_hz)) << "ms");
     std::chrono::milliseconds rate = (std::chrono::milliseconds) ((int)(1000. / rate_hz));
 
-    declare_parameter("seconds_per_swing", 2.0);
+    declare_parameter("seconds_per_swing", 0.25);
     double seconds_per_swing = get_parameter("seconds_per_swing").as_double();
     RCLCPP_INFO_STREAM(get_logger(), seconds_per_swing << " seconds per swing");
 
@@ -62,11 +61,11 @@ public:
     standup_time = get_parameter("standup_time").as_double();
     RCLCPP_INFO_STREAM(get_logger(), standup_time << "s standup_time");
 
-    declare_parameter("stiffness", 5.0); // kp
+    declare_parameter("stiffness", 90.0); // kp
     stiffness = get_parameter("stiffness").as_double();
     RCLCPP_INFO_STREAM(get_logger(), stiffness << " kp");
 
-    declare_parameter("damping", 1.0); // kd
+    declare_parameter("damping", 5.0); // kd
     damping = get_parameter("damping").as_double();
     RCLCPP_INFO_STREAM(get_logger(), damping << " kd");
 
@@ -78,7 +77,7 @@ public:
     stand_percentage = get_parameter("stand_percentage").as_double();
     RCLCPP_INFO_STREAM(get_logger(), stand_percentage << "%% stand height");
 
-    declare_parameter("gait_type", 0);
+    declare_parameter("gait_type", 2);
     gait_type = static_cast<GaitType>(get_parameter("gait_type").as_int());
     RCLCPP_INFO_STREAM(get_logger(), gait_type << " gait_type");
 
@@ -190,8 +189,6 @@ public:
       generate_tripod_gait();
     } else if (gait_type == TROT) {
       generate_trot_gait();
-      generate_sideways_gait();
-    } else if (gait_type == SIDEWAYS) {
       generate_sideways_gait();
     } else {
       throw std::logic_error("Gait Type must be 0, 1, or 2");
