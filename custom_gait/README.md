@@ -5,8 +5,6 @@ This is a ROS2 package that will generate desired gaits for the Unitree Go1 robo
 
 Before you can use this package, use the `unitree.repos` file in order to also clone the `unitree_ros2` package into the same workspace.
 
-More information on this project can be found here: https://katie-hughes.github.io/unitree/
-
 ## Executables
 * `custom_gait`: Provides a low level implemenation to stand up, lie down, and walk forwards, backwards, left, and right. A trajectory for each foot is generated and published using Bezier curve. In order for this node to physically move the dog, `udp_low` from the `unitree_legged_real` package must also be running.
 ### Services
